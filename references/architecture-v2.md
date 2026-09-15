@@ -12,16 +12,24 @@ Skill/router
                  -> canonical graph.json
 ```
 
-Derived views, checkpoints, dashboards, packets and quality reports are disposable. They never become a second story-fact source.
+Derived views, checkpoints, dashboards, packets, display profiles and quality reports are disposable. They never become a second story-fact source.
 
 ## Package boundaries
 
-- `scripts/nkg/core/`: read-only indexes and graph query runtime.
+- `scripts/nkg/core/`: read-only indexes, cache/provenance utilities and graph query runtime.
 - `scripts/nkg/temporal/`: checkpoint/fingerprint utilities and temporal replay primitives.
-- `scripts/nkg/extraction/`: context closure, retrieval escalation, schema slicing, state capsules and token telemetry.
+- `scripts/nkg/extraction/`: context closure, retrieval escalation, dynamic chunking, resume capsules, schema slicing, state capsules, wire deltas and token telemetry.
 - `scripts/nkg/validation/`: semantic invariants and accuracy-regression gates.
-- `scripts/nkg/views/`: audit/quality views and snapshot comparisons.
+- `scripts/nkg/views/`: audit/quality views, entity display profiles, dual-axis story time and snapshot comparisons.
 - historical top-level CLI files remain compatibility entry points while implementation moves behind these modules.
+
+## Intelligence boundary
+
+Deterministic code owns constraints that must be reproducible: stable IDs, references, temporal replay, evidence links, spoiler closure, provenance, cache validity, serialization, and invariant checks.
+
+AI owns judgments whose meaning depends on the actual work: which visible attributes are important, how to summarize an entity for a reader, which presentation labels are useful, whether a narrative detail is salient, and how to phrase a derived headline. These outputs stay in derived display/context artifacts and must remain evidence/time bounded.
+
+Do not turn semantic presentation preferences into large per-genre or per-entity-type `if/else` maps. If code cannot establish a semantic interpretation without brittle heuristics, expose the underlying evidence/state to the AI and let the AI decide or leave it unresolved.
 
 ## Performance contract
 
