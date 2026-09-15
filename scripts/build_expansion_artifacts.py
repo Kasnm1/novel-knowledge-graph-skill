@@ -76,6 +76,7 @@ def main() -> int:
     parser.add_argument("--collection-manifest", type=Path)
     parser.add_argument("--cutoff", type=int)
     parser.add_argument("--protagonist-id", action="append", default=[])
+    parser.add_argument("--checkpoint-interval", type=int, default=0, help="Prebuild strict snapshot checkpoints; 0 disables")
     parser.add_argument(
         "--step-timeout",
         type=float,
@@ -85,6 +86,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.step_timeout < 0:
         parser.error("--step-timeout must be >= 0")
+    if args.checkpoint_interval < 0:
+        parser.error("--checkpoint-interval must be >= 0")
 
     scripts = Path(__file__).resolve().parent
     out = args.output_dir
@@ -93,11 +96,13 @@ def main() -> int:
     timeout = args.step_timeout or None
     build_started = time.perf_counter()
     manifest: dict[str, Any] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "status": "running",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_graph": str(args.graph),
+        "source_graph_sha256": digest(args.graph)["sha256"],
         "cutoff": args.cutoff,
+        "checkpoint_interval": args.checkpoint_interval,
         "step_timeout_seconds": timeout,
         "steps": [],
         "required_artifacts": [],
@@ -123,6 +128,8 @@ def main() -> int:
         out / "validation-base.json",
         "--extension-report",
         out / "validation-expansion.json",
+        "--invariant-report",
+        out / "validation-invariants.json",
     ]
     if args.manifest:
         validate += ["--manifest", args.manifest]
@@ -146,6 +153,15 @@ def main() -> int:
         command += ["--protagonist-id", protagonist_id]
     if run_step("derive-views", command, manifest, timeout):
         return fail("view derivation failed")
+
+    quality = out / "quality-report.json"
+    if run_step(
+        "quality",
+        [sys.executable, scripts / "build_quality_report.py", "--graph", graph, "--output", quality],
+        manifest,
+        timeout,
+    ):
+        return fail("quality/invariant report failed")
 
     dashboard = [sys.executable, scripts / "build_unified_dashboard.py", "--graph", args.graph, "--output-dir", out]
     if args.cutoff is not None:
@@ -188,10 +204,26 @@ def main() -> int:
         if run_step("reader", reader, manifest, timeout):
             return fail("reader build failed")
 
+    checkpoint_manifest: Path | None = None
+    if args.checkpoint_interval:
+        checkpoint_dir = out / "checkpoints"
+        checkpoint_command = [
+            sys.executable,
+            scripts / "build_snapshot_checkpoints.py",
+            "--graph", graph,
+            "--output-dir", checkpoint_dir,
+            "--interval", args.checkpoint_interval,
+        ]
+        if run_step("checkpoints", checkpoint_command, manifest, timeout):
+            return fail("snapshot checkpoint build failed")
+        checkpoint_manifest = checkpoint_dir / "checkpoint-manifest.json"
+
     required = [
         out / "validation-base.json",
         out / "validation-expansion.json",
+        out / "validation-invariants.json",
         views,
+        quality,
         out / "dashboard.html",
         out / "expansion-candidates.json",
     ]
@@ -199,6 +231,8 @@ def main() -> int:
         required.append(graph)
     if args.chapters_jsonl:
         required.append(out / "reader.html")
+    if checkpoint_manifest is not None:
+        required.append(checkpoint_manifest)
     manifest["required_artifacts"] = [str(path) for path in required]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
@@ -209,7 +243,13 @@ def main() -> int:
     manifest["duration_ms"] = round((time.perf_counter() - build_started) * 1000, 3)
     manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
     write_manifest(manifest_path, manifest)
-    print(json.dumps({"status": "complete", "manifest": str(manifest_path), "dashboard": str(out / "dashboard.html"), "views": str(views)}, ensure_ascii=False))
+    print(json.dumps({
+        "status": "complete",
+        "manifest": str(manifest_path),
+        "dashboard": str(out / "dashboard.html"),
+        "views": str(views),
+        "quality": str(quality),
+    }, ensure_ascii=False))
     return 0
 
 

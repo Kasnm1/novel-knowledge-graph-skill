@@ -17,6 +17,8 @@ from typing import Any, Iterable, Mapping
 from derive_novel_views import build_views
 from filter_graph_asof import filter_graph
 from io_utils import atomic_write_json
+from nkg.core.runtime import GraphRuntime
+from nkg.views.quality import build_quality_summary
 
 
 def _records(value: Any) -> list[dict[str, Any]]:
@@ -28,21 +30,22 @@ def _legacy_view(filtered: dict[str, Any], collection_manifest: dict[str, Any] |
     if collection_manifest is not None:
         from derive_collection_views import CollectionDeriver
         collections = CollectionDeriver(filtered, collection_manifest, chapter=chapter).derive()
-    entities = _records(filtered.get("entities"))
+    runtime = GraphRuntime(filtered)
     by_type: dict[str, list[dict[str, Any]]] = {}
-    for entity in entities:
+    for entity in runtime.entities:
         by_type.setdefault(str(entity.get("type") or "unknown"), []).append(entity)
     for rows in by_type.values():
         rows.sort(key=lambda row: (str(row.get("name") or ""), str(row.get("id") or "")))
     return {
         "graph": {
-            "entities": entities,
-            "relations": _records(filtered.get("relations")),
-            "events": _records(filtered.get("events")),
+            "entities": runtime.entities,
+            "relations": runtime.relations,
+            "events": runtime.events,
         },
         "repository": {"by_type": by_type, "counts": {kind: len(rows) for kind, rows in by_type.items()}},
         "story_arcs": _records(filtered.get("story_arcs")),
         "collections": collections,
+        "runtime_stats": runtime.stats.__dict__,
     }
 
 
@@ -57,6 +60,7 @@ def derive_asof_views(
 ) -> dict[str, Any]:
     filtered = filter_graph(graph, chapter, strict=strict)
     views = build_views(filtered, explicit_protagonists, max(1, gap_threshold))
+    views["quality"] = build_quality_summary(filtered)
     legacy = _legacy_view(filtered, collection_manifest, chapter)
     views["metadata"]["snapshot_chapter"] = chapter
     views["metadata"]["spoiler_strict"] = strict
@@ -97,6 +101,7 @@ def main() -> int:
         "entities": len(snapshot["graph"].get("entities", [])),
         "events": len(snapshot["graph"].get("events", [])),
         "temporal_provenance_gaps": len(snapshot["metadata"].get("temporal_provenance_gaps", [])),
+        "invariant_warnings": snapshot["views"]["quality"]["invariants"]["warning_count"],
     }, ensure_ascii=False))
     return 0
 

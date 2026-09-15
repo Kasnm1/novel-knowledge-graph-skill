@@ -1,14 +1,14 @@
 {
-  "version": 4,
-  "always": ["../SKILL.md"],
+  "version": 5,
+  "always": ["../SKILL.md", "architecture-v2.md"],
   "modes": {
     "initialize": ["run-isolation.md", "schema.md", "TASK-SPEC.template.md"],
-    "extract_fragment": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md", "expansion-schema.md", "temporal-view-contract.md"],
+    "extract_fragment": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
     "merge": ["schema.md", "run-isolation.md", "retrieval-and-efficiency.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "audit": ["schema.md", "retrieval-and-efficiency.md", "expansion-schema.md", "temporal-view-contract.md"],
+    "audit": ["schema.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
     "dashboard": ["visualization.md", "dashboard-performance-and-navigation.md", "dashboard-taxonomy-and-relation-layout.md", "collection-views.md", "story-arcs.md", "overlapping-timelines-and-membership.md", "style-analysis.md", "expansion-schema.md", "expansion-workflows.md", "temporal-view-contract.md"],
-    "export_context": ["ai-context.md", "retrieval-and-efficiency.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "backfill": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md", "expansion-schema.md", "expansion-workflows.md", "temporal-view-contract.md"],
-    "optimize_execution": ["retrieval-and-efficiency.md", "execution-profiles.json"]
+    "export_context": ["ai-context.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
+    "backfill": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "expansion-workflows.md", "temporal-view-contract.md"],
+    "optimize_execution": ["retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "execution-profiles.json", "retrieval-profiles.json", "accuracy-context-fixture.json"]
   }
 }
