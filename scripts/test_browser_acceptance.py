@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from build_unified_dashboard import build_html, build_model
+from test_code_audit_regressions import temporal_graph
 from test_final_delivery import FUTURE, fixture_graph
 
 try:
@@ -79,7 +80,6 @@ class BrowserAcceptanceTests(unittest.TestCase):
         return self.driver.find_element(By.ID, "main").text
 
     def test_shared_slider_keeps_all_panels_on_same_snapshot(self):
-        # Exercise non-monotonic slider movement; stale cached final state must not survive.
         for chapter in (1, 2, 8, 4, 7, 3, 5):
             self.set_chapter(chapter)
             self.assertIn("统一快照", self.driver.find_element(By.ID, "state").text)
@@ -95,7 +95,7 @@ class BrowserAcceptanceTests(unittest.TestCase):
         self.assertIn("1", resources)
         self.assertNotIn("99", resources)
         skills = self.open_tab("技能")
-        self.assertNotIn("早期名", skills)  # holder relation begins at chapter 8
+        self.assertNotIn("早期名", skills)
         narrative = self.open_tab("写法")
         self.assertNotIn(FUTURE, narrative)
         repository = self.open_tab("仓库")
@@ -111,6 +111,19 @@ class BrowserAcceptanceTests(unittest.TestCase):
 
         severe = [row for row in self.driver.get_log("browser") if row.get("level") == "SEVERE"]
         self.assertEqual(severe, [], severe)
+
+    def test_relation_status_uses_visible_observations_in_browser_snapshot(self):
+        root = Path(self.tmp.name)
+        page = root / "relation-dashboard.html"
+        page.write_text(build_html(build_model(temporal_graph())), encoding="utf-8")
+        self.driver.get(page.as_uri())
+        self.slider = self.driver.find_element(By.ID, "ch")
+        self.set_chapter(5)
+        self.assertEqual(self.driver.execute_script("return S.graph.relations[0].status"), "active")
+        self.assertIsNone(self.driver.execute_script("return S.graph.relations[0].valid_to ?? null"))
+        self.set_chapter(9)
+        self.assertEqual(self.driver.execute_script("return S.graph.relations[0].status"), "ended")
+        self.assertEqual(self.driver.execute_script("return S.graph.relations[0].valid_to"), 9)
 
     def test_cutoff_dashboard_source_has_no_future_marker(self):
         model = build_model(fixture_graph(), gap_threshold=2, cutoff=5)
