@@ -15,6 +15,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Iterable
 
+from io_utils import atomic_write_json
+
 CHAPTER_FIELDS = (
     "chapter", "first_chapter", "created_chapter", "chapter_start", "valid_from",
     "planted_chapter", "first_meeting_chapter", "ambiguity_started_chapter",
@@ -23,7 +25,7 @@ PROSE_TEMPORAL_FIELDS = ("summary", "description")
 
 
 def recs(value: Any) -> list[dict[str, Any]]:
-    return [x for x in value if isinstance(x, dict)] if isinstance(value, list) else []
+    return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
 def _chapter(value: Any) -> int | None:
@@ -32,31 +34,26 @@ def _chapter(value: Any) -> int | None:
 
 def first_visible_chapter(record: dict[str, Any]) -> int | None:
     values = [_chapter(record.get(field)) for field in CHAPTER_FIELDS]
-    values = [value for value in values if value is not None]
-    return min(values) if values else None
+    present = [value for value in values if value is not None]
+    return min(present) if present else None
 
 
 def visible_record(record: dict[str, Any], chapter: int, *, strict_unknown: bool = False) -> bool:
     start = first_visible_chapter(record)
-    if start is None:
-        return not strict_unknown
-    return start <= chapter
+    return (not strict_unknown) if start is None else start <= chapter
 
 
 def _meta_lookup(mapping: Any, entity_id: str, key: str | None = None) -> int | None:
     if not isinstance(mapping, dict):
         return None
     if key is None:
-        value = mapping.get(entity_id)
-        return _chapter(value)
+        return _chapter(mapping.get(entity_id))
     nested = mapping.get(entity_id)
-    if isinstance(nested, dict):
-        return _chapter(nested.get(key))
-    return None
+    return _chapter(nested.get(key)) if isinstance(nested, dict) else None
 
 
 def _history_value(history: Any, chapter: int, value_keys: Iterable[str]) -> Any:
-    rows = []
+    rows: list[tuple[int, str, dict[str, Any]]] = []
     for row in recs(history):
         start = _chapter(row.get("valid_from"))
         if start is None:
@@ -66,29 +63,37 @@ def _history_value(history: Any, chapter: int, value_keys: Iterable[str]) -> Any
         rows.append((start, str(row.get("id") or ""), row))
     if not rows:
         return None
-    row = max(rows, key=lambda item: (item[0], item[1]))[2]
+    chosen = max(rows, key=lambda item: (item[0], item[1]))[2]
     for key in value_keys:
-        if key in row:
-            return deepcopy(row.get(key))
+        if key in chosen:
+            return deepcopy(chosen.get(key))
     return None
 
 
 def _filter_history(history: Any, chapter: int) -> list[dict[str, Any]]:
-    out = []
+    result: list[dict[str, Any]] = []
     for row in recs(history):
         start = _chapter(row.get("valid_from"))
         if start is None:
             start = _chapter(row.get("chapter"))
         if start is not None and start > chapter:
             continue
-        copy = deepcopy(row)
-        if _chapter(copy.get("valid_to")) is not None and copy["valid_to"] > chapter:
-            copy["valid_to"] = None
-        out.append(copy)
-    return out
+        copied = deepcopy(row)
+        end = _chapter(copied.get("valid_to"))
+        if end is not None and end > chapter:
+            copied["valid_to"] = None
+        result.append(copied)
+    return result
 
 
-def _safe_name(entity: dict[str, Any], chapter: int, meta: dict[str, Any], gaps: list[str], strict: bool, terminal_chapter: int | None) -> str:
+def _safe_name(
+    entity: dict[str, Any],
+    chapter: int,
+    meta: dict[str, Any],
+    gaps: list[str],
+    strict: bool,
+    terminal_chapter: int | None,
+) -> str:
     entity_id = str(entity.get("id") or "")
     value = _history_value(entity.get("name_history"), chapter, ("name", "value"))
     if isinstance(value, str) and value.strip():
@@ -113,7 +118,7 @@ def _filter_aliases(entity: dict[str, Any], chapter: int, meta: dict[str, Any], 
         values = entity.get(field)
         if not isinstance(values, list):
             continue
-        kept = []
+        kept: list[Any] = []
         unknown_count = 0
         for value in values:
             if isinstance(value, dict):
@@ -125,10 +130,11 @@ def _filter_aliases(entity: dict[str, Any], chapter: int, meta: dict[str, Any], 
                     continue
                 if start is not None and start > chapter:
                     continue
-                copy = deepcopy(value)
-                if _chapter(copy.get("valid_to")) is not None and copy["valid_to"] > chapter:
-                    copy["valid_to"] = None
-                kept.append(copy)
+                copied = deepcopy(value)
+                end = _chapter(copied.get("valid_to"))
+                if end is not None and end > chapter:
+                    copied["valid_to"] = None
+                kept.append(copied)
                 continue
             if not isinstance(value, str):
                 continue
@@ -151,9 +157,9 @@ def _project_entity_prose(entity: dict[str, Any], chapter: int, meta: dict[str, 
     entity_id = str(entity.get("id") or "")
     for field in PROSE_TEMPORAL_FIELDS:
         history = entity.get(f"{field}_history")
-        hist_value = _history_value(history, chapter, (field, "value", "text"))
-        if hist_value is not None:
-            entity[field] = hist_value
+        history_value = _history_value(history, chapter, (field, "value", "text"))
+        if history_value is not None:
+            entity[field] = history_value
             entity[f"{field}_history"] = _filter_history(history, chapter)
         else:
             first = _chapter(entity.get(f"{field}_chapter"))
@@ -167,7 +173,8 @@ def _project_entity_prose(entity: dict[str, Any], chapter: int, meta: dict[str, 
                 gaps.append(f"entity:{entity_id}:{field}:untimed")
                 entity.pop(field, None)
         for timing_key in (f"{field}_chapter", f"{field}_first_chapter"):
-            if _chapter(entity.get(timing_key)) is not None and entity[timing_key] > chapter:
+            value = _chapter(entity.get(timing_key))
+            if value is not None and value > chapter:
                 entity.pop(timing_key, None)
 
 
@@ -175,7 +182,7 @@ def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, An
     entity_id = str(entity.get("id") or "")
     history = recs(entity.get("attribute_history")) + recs(entity.get("attributes_history"))
     reconstructed: dict[str, Any] = {}
-    for row in sorted(history, key=lambda r: (_chapter(r.get("chapter")) or _chapter(r.get("valid_from")) or 0, str(r.get("id") or ""))):
+    for row in sorted(history, key=lambda item: (_chapter(item.get("chapter")) or _chapter(item.get("valid_from")) or 0, str(item.get("id") or ""))):
         start = _chapter(row.get("chapter"))
         if start is None:
             start = _chapter(row.get("valid_from"))
@@ -196,7 +203,7 @@ def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, An
                 reconstructed[key] = deepcopy(value)
             elif first is None and not strict:
                 reconstructed[key] = deepcopy(value)
-            elif first is None and strict:
+            elif first is None:
                 unknown += 1
     if unknown:
         gaps.append(f"entity:{entity_id}:attributes:untimed:{unknown}")
@@ -207,23 +214,55 @@ def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, An
     entity.pop("current_state", None)
 
 
-def _filter_evidence_ids(record: dict[str, Any], evidence_ids: set[str]) -> None:
-    if isinstance(record.get("evidence_ids"), list):
-        record["evidence_ids"] = [x for x in record["evidence_ids"] if x in evidence_ids]
+def _scrub_evidence_refs(value: Any, allowed: set[str]) -> Any:
+    """Recursively remove evidence references that are outside the snapshot."""
+    if isinstance(value, dict):
+        for key, item in list(value.items()):
+            if key.endswith("evidence_ids") and isinstance(item, list):
+                value[key] = [ref for ref in item if ref in allowed]
+            else:
+                _scrub_evidence_refs(item, allowed)
+    elif isinstance(value, list):
+        for item in value:
+            _scrub_evidence_refs(item, allowed)
+    return value
 
 
 def _commitment_asof(row: dict[str, Any], chapter: int) -> None:
-    observations = [o for o in recs(row.get("observations")) if _chapter(o.get("chapter")) is None or o["chapter"] <= chapter]
-    observations.sort(key=lambda o: (_chapter(o.get("chapter")) or 0, str(o.get("id") or "")))
+    observations = [deepcopy(obs) for obs in recs(row.get("observations")) if _chapter(obs.get("chapter")) is None or obs["chapter"] <= chapter]
+    observations.sort(key=lambda obs: (_chapter(obs.get("chapter")) or 0, str(obs.get("id") or "")))
     row["observations"] = observations
     resolved = _chapter(row.get("resolved_chapter"))
     if resolved is not None and resolved > chapter:
         row["resolved_chapter"] = None
         row["resolution"] = None
-    observed_status = next((o.get("status") for o in reversed(observations) if isinstance(o.get("status"), str)), None)
-    if observed_status:
-        row["status"] = observed_status
+    visible_status = next((obs.get("status") for obs in reversed(observations) if isinstance(obs.get("status"), str)), None)
+    if visible_status:
+        row["status"] = visible_status
     elif resolved is None or resolved > chapter:
+        row["status"] = "active"
+
+
+def _relation_asof(row: dict[str, Any], chapter: int) -> None:
+    observations: list[dict[str, Any]] = []
+    for obs in recs(row.get("observations")):
+        at = _chapter(obs.get("chapter"))
+        if at is not None and at > chapter:
+            continue
+        copied = deepcopy(obs)
+        obs_end = _chapter(copied.get("valid_to"))
+        if obs_end is not None and obs_end > chapter:
+            copied["valid_to"] = None
+        observations.append(copied)
+    observations.sort(key=lambda obs: (_chapter(obs.get("chapter")) or 0, str(obs.get("id") or "")))
+    row["observations"] = observations
+    end = _chapter(row.get("valid_to"))
+    if end is not None and end > chapter:
+        row.pop("valid_to", None)
+    visible_status = next((obs.get("status") for obs in reversed(observations) if isinstance(obs.get("status"), str)), None)
+    if visible_status:
+        row["status"] = visible_status
+    elif end is not None and end > chapter and row.get("status") not in {None, "active", "uncertain"}:
         row["status"] = "active"
 
 
@@ -231,12 +270,12 @@ def _scrub_temporal_metadata(meta: dict[str, Any], chapter: int) -> None:
     for field in ("name_first_chapter", "summary_first_chapter", "description_first_chapter"):
         mapping = meta.get(field)
         if isinstance(mapping, dict):
-            meta[field] = {k: v for k, v in mapping.items() if _chapter(v) is not None and v <= chapter}
+            meta[field] = {key: value for key, value in mapping.items() if _chapter(value) is not None and value <= chapter}
     for field in ("alias_first_chapter", "attribute_first_chapter"):
         mapping = meta.get(field)
         if not isinstance(mapping, dict):
             continue
-        cleaned = {}
+        cleaned: dict[str, dict[str, int]] = {}
         for entity_id, nested in mapping.items():
             if not isinstance(nested, dict):
                 continue
@@ -254,153 +293,164 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
     original_end = _chapter(meta.get("chapter_end"))
     gaps: list[str] = []
 
-    entities = []
+    entities: list[dict[str, Any]] = []
     for entity in recs(out.get("entities")):
-        if _chapter(entity.get("first_chapter")) is not None and entity["first_chapter"] > chapter:
+        first = _chapter(entity.get("first_chapter"))
+        if first is not None and first > chapter:
             continue
         entity["name"] = _safe_name(entity, chapter, meta, gaps, strict, original_end)
         entity["name_history"] = _filter_history(entity.get("name_history"), chapter)
-        if _chapter(entity.get("name_first_chapter")) is not None and entity["name_first_chapter"] > chapter:
+        name_first = _chapter(entity.get("name_first_chapter"))
+        if name_first is not None and name_first > chapter:
             entity.pop("name_first_chapter", None)
         _filter_aliases(entity, chapter, meta, gaps, strict)
         _project_entity_prose(entity, chapter, meta, gaps, strict)
         _project_attributes(entity, chapter, meta, gaps, strict)
         entities.append(entity)
     out["entities"] = entities
-    entity_ids = {e.get("id") for e in entities}
+    entity_ids = {entity.get("id") for entity in entities}
 
-    evidence = [e for e in recs(out.get("evidence")) if _chapter(e.get("chapter")) is None or e["chapter"] <= chapter]
+    evidence = [row for row in recs(out.get("evidence")) if _chapter(row.get("chapter")) is None or row["chapter"] <= chapter]
     out["evidence"] = evidence
-    evidence_ids = {e.get("id") for e in evidence if isinstance(e.get("id"), str)}
+    evidence_ids = {row.get("id") for row in evidence if isinstance(row.get("id"), str)}
 
-    events = []
+    events: list[dict[str, Any]] = []
     for event in recs(out.get("events")):
-        if _chapter(event.get("chapter")) is not None and event["chapter"] > chapter:
+        at = _chapter(event.get("chapter"))
+        if at is not None and at > chapter:
             continue
-        event["participant_ids"] = [x for x in event.get("participant_ids", []) if x in entity_ids] if isinstance(event.get("participant_ids"), list) else []
+        event["participant_ids"] = [ref for ref in event.get("participant_ids", []) if ref in entity_ids] if isinstance(event.get("participant_ids"), list) else []
         if event.get("location_id") not in entity_ids:
             event.pop("location_id", None)
-        _filter_evidence_ids(event, evidence_ids)
         events.append(event)
     out["events"] = events
-    event_ids = {e.get("id") for e in events}
+    event_ids = {event.get("id") for event in events}
 
-    relations = []
+    relations: list[dict[str, Any]] = []
     for relation in recs(out.get("relations")):
         if relation.get("source_id") not in entity_ids or relation.get("target_id") not in entity_ids:
             continue
         start = _chapter(relation.get("valid_from"))
         if start is not None and start > chapter:
             continue
-        original_relation_end = _chapter(relation.get("valid_to"))
-        relation["observations"] = [o for o in recs(relation.get("observations")) if _chapter(o.get("chapter")) is None or o["chapter"] <= chapter]
-        _filter_evidence_ids(relation, evidence_ids)
-        if original_relation_end is not None and original_relation_end > chapter:
-            relation.pop("valid_to", None)
-            if relation.get("status") not in {None, "active", "uncertain"}:
-                relation["status"] = "active"
+        _relation_asof(relation, chapter)
         relations.append(relation)
     out["relations"] = relations
 
-    state_changes = []
+    state_changes: list[dict[str, Any]] = []
     for change in recs(out.get("state_changes")):
         if change.get("entity_id") not in entity_ids:
             continue
-        if _chapter(change.get("chapter")) is not None and change["chapter"] > chapter:
+        at = _chapter(change.get("chapter"))
+        if at is not None and at > chapter:
             continue
         if change.get("target_id") is not None and change.get("target_id") not in entity_ids:
             continue
-        _filter_evidence_ids(change, evidence_ids)
-        if _chapter(change.get("end_chapter")) is not None and change["end_chapter"] > chapter:
+        end = _chapter(change.get("end_chapter"))
+        if end is not None and end > chapter:
             change.pop("end_chapter", None)
         state_changes.append(change)
     out["state_changes"] = state_changes
 
     for key in ("intimate_acts", "level_conversions", "character_traits", "chapter_summaries", "item_roles", "commitments", "review_issues"):
-        filtered = []
+        rows: list[dict[str, Any]] = []
         for row in recs(out.get(key)):
             if not visible_record(row, chapter, strict_unknown=False):
                 continue
-            _filter_evidence_ids(row, evidence_ids)
             if key == "commitments":
                 _commitment_asof(row, chapter)
-            elif key == "item_roles" and _chapter(row.get("valid_to")) is not None and row["valid_to"] > chapter:
-                row.pop("valid_to", None)
-            filtered.append(row)
-        out[key] = filtered
+            elif key == "item_roles":
+                end = _chapter(row.get("valid_to"))
+                if end is not None and end > chapter:
+                    row.pop("valid_to", None)
+            rows.append(row)
+        out[key] = rows
 
-    routes = []
+    routes: list[dict[str, Any]] = []
     for route in recs(out.get("romance_routes")):
         first = _chapter(route.get("first_meeting_chapter"))
         if first is not None and first > chapter:
             continue
-        ambiguity = _chapter(route.get("ambiguity_started_chapter"))
-        confirmed = _chapter(route.get("confirmed_chapter"))
-        for chfield, evfield in (("confirmed_chapter", "confirmed_evidence_ids"), ("first_sex_chapter", "first_sex_evidence_ids"), ("ambiguity_started_chapter", "ambiguity_evidence_ids")):
-            value = _chapter(route.get(chfield))
+        for chapter_field, evidence_field in (
+            ("confirmed_chapter", "confirmed_evidence_ids"),
+            ("first_sex_chapter", "first_sex_evidence_ids"),
+            ("ambiguity_started_chapter", "ambiguity_evidence_ids"),
+        ):
+            value = _chapter(route.get(chapter_field))
             if value is not None and value > chapter:
-                route[chfield] = None
-                route[evfield] = []
+                route[chapter_field] = None
+                route[evidence_field] = []
+        confirmed = _chapter(route.get("confirmed_chapter"))
+        intimacy = _chapter(route.get("first_sex_chapter"))
+        ambiguity = _chapter(route.get("ambiguity_started_chapter"))
         if confirmed is not None and confirmed <= chapter:
-            route["status"] = "confirmed"
+            route["status"] = "confirmed_relationship"
+        elif intimacy is not None and intimacy <= chapter:
+            route["status"] = "provisional_intimate"
         elif ambiguity is not None and ambiguity <= chapter:
             route["status"] = "ambiguous"
         else:
-            route["status"] = "introduced"
+            route["status"] = "uncertain"
         routes.append(route)
     out["romance_routes"] = routes
 
-    arcs = []
+    arcs: list[dict[str, Any]] = []
     for arc in recs(out.get("story_arcs")):
         start = _chapter(arc.get("chapter_start"))
         if start is not None and start > chapter:
             continue
-        if _chapter(arc.get("chapter_end")) is not None and arc["chapter_end"] > chapter:
+        end = _chapter(arc.get("chapter_end"))
+        if end is not None and end > chapter:
             arc["chapter_end"] = None
             if arc.get("status") in {"closed", "complete", "completed", "resolved"}:
                 arc["status"] = "active"
-        arc["event_ids"] = [x for x in arc.get("event_ids", []) if x in event_ids] if isinstance(arc.get("event_ids"), list) else []
+        if isinstance(arc.get("event_ids"), list):
+            arc["event_ids"] = [ref for ref in arc["event_ids"] if ref in event_ids]
         arcs.append(arc)
     out["story_arcs"] = arcs
 
-    fs_rows = []
-    for fs in recs(out.get("foreshadowing")):
-        planted = _chapter(fs.get("planted_chapter"))
+    foreshadowing: list[dict[str, Any]] = []
+    for clue in recs(out.get("foreshadowing")):
+        planted = _chapter(clue.get("planted_chapter"))
         if planted is not None and planted > chapter:
             continue
-        payoff = _chapter(fs.get("payoff_chapter"))
+        progression = [row for row in recs(clue.get("progression")) if _chapter(row.get("chapter")) is None or row["chapter"] <= chapter]
+        clue["progression"] = progression
+        payoff = _chapter(clue.get("payoff_chapter"))
         if payoff is not None and payoff > chapter:
-            fs["payoff_chapter"] = None
-            if fs.get("status") in {"resolved", "paid_off"}:
-                fs["status"] = "active"
-        fs["progression"] = [p for p in recs(fs.get("progression")) if _chapter(p.get("chapter")) is None or p["chapter"] <= chapter]
-        _filter_evidence_ids(fs, evidence_ids)
-        fs_rows.append(fs)
-    out["foreshadowing"] = fs_rows
+            clue["payoff_chapter"] = None
+            clue.pop("payoff_event_id", None)
+            visible_status = next((row.get("status") for row in reversed(progression) if isinstance(row.get("status"), str)), None)
+            clue["status"] = visible_status or "open"
+        foreshadowing.append(clue)
+    out["foreshadowing"] = foreshadowing
 
-    style_rows = []
-    for obs in recs(out.get("style_observations")):
-        start = first_visible_chapter(obs)
+    style_rows: list[dict[str, Any]] = []
+    for observation in recs(out.get("style_observations")):
+        start = first_visible_chapter(observation)
         if start is None:
-            start = _chapter(obs.get("chapter_start"))
+            start = _chapter(observation.get("chapter_start"))
         if start is None and strict:
             gaps.append("style_observation:untimed")
             continue
         if start is not None and start > chapter:
             continue
-        copy = deepcopy(obs)
-        if _chapter(copy.get("chapter_end")) is not None and copy["chapter_end"] > chapter:
-            copy["chapter_end"] = chapter
-        _filter_evidence_ids(copy, evidence_ids)
-        style_rows.append(copy)
+        copied = deepcopy(observation)
+        end = _chapter(copied.get("chapter_end"))
+        if end is not None and end > chapter:
+            copied["chapter_end"] = chapter
+        style_rows.append(copied)
     if "style_observations" in out:
         out["style_observations"] = style_rows
 
+    # A final recursive pass prevents nested observations/facets from retaining
+    # evidence IDs whose evidence record is outside the reader-safe snapshot.
+    _scrub_evidence_refs(out, evidence_ids)
     _scrub_temporal_metadata(meta, chapter)
     meta["spoiler_cutoff_chapter"] = chapter
     meta["spoiler_strict"] = strict
     meta["temporal_provenance_gaps"] = sorted(set(gaps))
-    analyzed = [c for c in meta.get("analyzed_chapters", []) if isinstance(c, int) and c <= chapter]
+    analyzed = [value for value in meta.get("analyzed_chapters", []) if isinstance(value, int) and value <= chapter]
     meta["analyzed_chapters"] = analyzed
     if analyzed:
         meta["chapter_start"], meta["chapter_end"] = min(analyzed), max(analyzed)
@@ -411,17 +461,22 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--graph", required=True, type=Path)
-    p.add_argument("--chapter", required=True, type=int)
-    p.add_argument("--output", required=True, type=Path)
-    p.add_argument("--compat", action="store_true", help="Retain untimed legacy prose/aliases instead of strict spoiler closure")
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--graph", required=True, type=Path)
+    parser.add_argument("--chapter", required=True, type=int)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--compat", action="store_true", help="Retain untimed legacy prose/aliases instead of strict spoiler closure")
+    args = parser.parse_args()
     graph = json.loads(args.graph.read_text(encoding="utf-8"))
     filtered = filter_graph(graph, args.chapter, strict=not args.compat)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(filtered, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"output":str(args.output),"chapter":args.chapter,"entities":len(filtered.get("entities",[])),"events":len(filtered.get("events",[])),"temporal_provenance_gaps":len(filtered.get("metadata",{}).get("temporal_provenance_gaps",[]))},ensure_ascii=False))
+    atomic_write_json(args.output, filtered, trailing_newline=False)
+    print(json.dumps({
+        "output": str(args.output),
+        "chapter": args.chapter,
+        "entities": len(filtered.get("entities", [])),
+        "events": len(filtered.get("events", [])),
+        "temporal_provenance_gaps": len(filtered.get("metadata", {}).get("temporal_provenance_gaps", [])),
+    }, ensure_ascii=False))
     return 0
 
 
