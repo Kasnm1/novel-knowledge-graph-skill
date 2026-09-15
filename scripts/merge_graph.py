@@ -16,9 +16,14 @@ from event_types import canonicalize_event_types
 from intimacy_types import canonicalize_intimate_acts
 from character_traits import canonical_facet, sort_traits
 from level_conversions import canonicalize_level_conversions
+from io_utils import atomic_write_json
+from required_fields import ARRAY_KINDS
 
 
-ARRAYS = ("entities", "events", "relations", "state_changes", "romance_routes", "foreshadowing", "evidence", "review_issues", "intimate_acts", "level_conversions", "character_traits", "chapter_summaries", "item_roles", "story_arcs")
+# One canonical array registry. New top-level fact families must enter through
+# required_fields.py so merge, validation, results facts and exports can audit
+# the same set instead of maintaining divergent hand-written tuples.
+ARRAYS = tuple(ARRAY_KINDS)
 STRICT_KINDS = {"events", "state_changes", "evidence"}
 SYMMETRIC_RELATION_TYPES = {
     "alter_ego_of", "close_friend_of", "companion_of", "dating", "enemy_of", "friend_of",
@@ -28,11 +33,7 @@ SYMMETRIC_RELATION_TYPES = {
 
 
 def canonicalize_character_traits(records: list) -> tuple[list, list]:
-    """把中文／别名分面折回规范值，并按 (人物, 分面, 章节) 排序。
-
-    排序不是美化：渲染要按 `chapter <= N` 取每个分面的最新一条，顺序错了就会
-    显示成旧的那一版。所以排序发生在合并这一层，两个渲染器都受益。
-    """
+    """把中文／别名分面折回规范值，并按 (人物, 分面, 章节) 排序。"""
     notes: list[str] = []
     for record in records:
         raw = record.get("facet")
@@ -63,9 +64,13 @@ def merge_value(left, right, field: str):
         for key, value in right.items():
             merged[key] = merge_value(merged.get(key), value, key)
         return merged
-    if field in {"first_chapter", "valid_from", "planted_chapter", "first_meeting_chapter", "ambiguity_started_chapter", "confirmed_chapter", "first_sex_chapter"} and isinstance(left, int) and isinstance(right, int):
+    if field in {
+        "first_chapter", "valid_from", "planted_chapter", "first_meeting_chapter",
+        "ambiguity_started_chapter", "confirmed_chapter", "first_sex_chapter",
+        "created_chapter",
+    } and isinstance(left, int) and isinstance(right, int):
         return min(left, right)
-    if field in {"last_chapter", "valid_to", "payoff_chapter"} and isinstance(left, int) and isinstance(right, int):
+    if field in {"last_chapter", "valid_to", "payoff_chapter", "resolved_chapter"} and isinstance(left, int) and isinstance(right, int):
         return max(left, right)
     return deepcopy(right)
 
@@ -96,13 +101,11 @@ def relation_key(record: dict) -> tuple[str, str, str]:
 
 
 def relation_pair_key(record: dict) -> str:
-    """Stable, readable key for one canonical pair and semantic relation."""
     source, target, relation_type = relation_key(record)
     return f"{source}|{target}|{relation_type}"
 
 
 def relation_observation(record: dict) -> dict:
-    """Project one fragment declaration into append-only relationship history."""
     observation = {
         "chapter": record.get("chapter") if isinstance(record.get("chapter"), int) else record.get("valid_from"),
         "evidence_ids": unique(list(record.get("evidence_ids") or [])),
@@ -128,7 +131,6 @@ def prepare_relation(record: dict) -> dict:
 
 
 def merge_relation_records(left: dict, right: dict) -> dict:
-    """Merge one uninterrupted episode without losing scalar qualifications."""
     merged = merge_record(left, right)
     merged["id"] = left["id"]
     merged["source_id"] = left.get("source_id")
@@ -155,7 +157,10 @@ def merge_relation_records(left: dict, right: dict) -> dict:
         if marker not in seen:
             seen.add(marker)
             observations.append(deepcopy(item))
-    observations.sort(key=lambda item: (item.get("chapter") if isinstance(item.get("chapter"), int) else 0, json.dumps(item, ensure_ascii=False, sort_keys=True)))
+    observations.sort(key=lambda item: (
+        item.get("chapter") if isinstance(item.get("chapter"), int) else 0,
+        json.dumps(item, ensure_ascii=False, sort_keys=True),
+    ))
     merged["observations"] = observations
     return merged
 
@@ -170,15 +175,16 @@ def relation_intervals_overlap(left: dict, right: dict) -> bool:
 
 
 def coalesce_relations(records: list[dict]) -> tuple[list[dict], dict[str, str]]:
-    """Merge overlapping restatements of one relation while preserving true episodes."""
+    """Merge overlapping restatements while preserving a known close.
+
+    A later overlapping record that merely says ``active`` with no ``valid_to``
+    is weaker than an earlier evidence-backed close. True resumed relationships
+    start after the old episode ends and therefore form a separate episode.
+    """
     result: list[dict] = []
     buckets: dict[tuple[str, str, str], list[int]] = {}
     canonicalization: dict[str, str] = {}
-    # Python's stable sort retains fragment order for equal start chapters, so a
-    # later fragment can close or refine an earlier open relationship episode.
-    # valid_from 为显式 null 时 r.get(..., 0) 仍返回 None，与 int 比较会抛
-    # TypeError。数据本身该被 validate 拦下，但合并不该因此整个崩掉。
-    ordered = sorted(records, key=lambda r: (r.get("valid_from") if isinstance(r.get("valid_from"), int) else 0))
+    ordered = sorted(records, key=lambda row: row.get("valid_from") if isinstance(row.get("valid_from"), int) else 0)
     for record in ordered:
         key = relation_key(record)
         match_index = next(
@@ -192,10 +198,7 @@ def coalesce_relations(records: list[dict]) -> tuple[list[dict], dict[str, str]]
         prior = result[match_index]
         prior_id = prior["id"]
         duplicate_id = record["id"]
-        merged = merge_relation_records(prior, prepare_relation(record))
-        if record.get("status") == "active" and record.get("valid_to") in (None, ""):
-            merged.pop("valid_to", None)
-        result[match_index] = merged
+        result[match_index] = merge_relation_records(prior, prepare_relation(record))
         if duplicate_id != prior_id:
             canonicalization[duplicate_id] = prior_id
     return result, canonicalization
@@ -232,20 +235,15 @@ def main() -> int:
     conflicts = []
     indexes = {name: {} for name in ARRAYS}
     metadata_notes: list = []
-    # Coverage has to be read per fragment, before the metadata merge flattens
-    # every fragment's chapter_range into one list. A fragment may declare the
-    # exact chapters it read (analyzed_chapters) or only the span it covered
-    # (chapter_range / chapter_start+chapter_end); both describe coverage, and
-    # neither is the same thing as the manifest's prepared_chapters.
     analyzed: set[int] = set()
 
     def absorb_coverage(meta: dict) -> None:
         declared = meta.get("analyzed_chapters")
         if isinstance(declared, list) and declared:
-            analyzed.update(c for c in declared if isinstance(c, int))
+            analyzed.update(chapter for chapter in declared if isinstance(chapter, int))
             return
         span = meta.get("chapter_range")
-        if isinstance(span, list) and len(span) == 2 and all(isinstance(c, int) for c in span):
+        if isinstance(span, list) and len(span) == 2 and all(isinstance(chapter, int) for chapter in span):
             analyzed.update(range(min(span), max(span) + 1))
             return
         start, end = meta.get("chapter_start"), meta.get("chapter_end")
@@ -263,7 +261,13 @@ def main() -> int:
             metadata_notes.append(raw_notes)
         merged["metadata"] = merge_record(merged["metadata"], meta)
         for name in ARRAYS:
-            for record in fragment.get(name, []):
+            records = fragment.get(name, [])
+            if records is None:
+                continue
+            if not isinstance(records, list):
+                conflicts.append({"kind": name, "file": str(path), "issue": "array field is not a list"})
+                continue
+            for record in records:
                 if not isinstance(record, dict) or not record.get("id"):
                     conflicts.append({"kind": name, "file": str(path), "issue": "record missing id"})
                     continue
@@ -279,9 +283,7 @@ def main() -> int:
 
     for name in ARRAYS:
         merged[name] = list(indexes[name].values())
-    # Independent fragments spell the same attribute two ways ("性别" and
-    # "gender"). Fold the alias spellings onto canonical keys here so the graph
-    # itself carries one key per fact and no reader-facing view renders it twice.
+
     attribute_notes: list[str] = []
     for record in merged["entities"]:
         if "attributes" not in record:
@@ -291,10 +293,7 @@ def main() -> int:
             record["attributes"] = canonical
         for note in notes:
             attribute_notes.append(f"{record.get('id')}：{note}")
-    # One fragment names an entity "血皇（刘弈的猎人代号与伪装身份）" with alias "血皇",
-    # a later fragment settles on the name "血皇". After the name merge the alias merely
-    # repeats the name, and the dashboard renders the same label twice in the alias chips.
-    # This is invisible to any per-fragment check, so it is normalized on the merged view.
+
     alias_notes: list[str] = []
     for record in merged["entities"]:
         aliases = record.get("aliases")
@@ -307,11 +306,7 @@ def main() -> int:
         if len(kept) != len(aliases):
             record["aliases"] = kept
             alias_notes.append(f"{record.get('id')}：删除与名称重复的别名")
-    # A pass has no shared event-type vocabulary unless the spec fixes one, so the
-    # same kind of event arrives as "reveal" from one fragment and
-    # "information_reveal" from another. Fold the unambiguous synonyms here; a
-    # label outside RECOMMENDED_EVENT_TYPES is reported by validate_graph.py
-    # rather than rewritten, because it may be a legitimate book-specific kind.
+
     merged["events"], event_type_notes = canonicalize_event_types(merged["events"])
     merged["intimate_acts"], intimacy_notes = canonicalize_intimate_acts(merged["intimate_acts"])
     merged["level_conversions"], conversion_notes = canonicalize_level_conversions(merged["level_conversions"])
@@ -321,31 +316,19 @@ def main() -> int:
         for name in ARRAYS:
             if name != "relations":
                 merged[name] = remap_ids(merged[name], relation_canonicalization)
+
     merged["metadata"]["analyzed_chapters"] = sorted(analyzed)
     if merged["metadata"].get("analyzed_chapters"):
         merged["metadata"]["chapter_start"] = min(merged["metadata"]["analyzed_chapters"])
         merged["metadata"]["chapter_end"] = max(merged["metadata"]["analyzed_chapters"])
     merged["metadata"]["generated_at"] = datetime.now(timezone.utc).isoformat()
     merged["metadata"]["fragment_sources"] = [str(path) for path, _ in fragments]
-    # `fragment` is a per-fragment field, and a scalar merge keeps the *last*
-    # input's copy — so the merged graph claimed to come from the final fragment
-    # alone (`fragment-11-ch091-100` for a twelve-fragment book). The real source
-    # list is `fragment_sources`, so the misleading single name is dropped.
     merged["metadata"].pop("fragment", None)
-    # A fragment edited *after* this merge leaves graph.json stale while
-    # validation still reports valid: true -- validation proves the graph is
-    # self-consistent, never that it is current. Recording each input's digest
-    # here is what lets validate_graph.py notice; paths alone cannot, because a
-    # path is unchanged by an edit.
     merged["metadata"]["input_fingerprint"] = {
         "algorithm": "sha256",
-        "fragments": {
-            path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path, _ in fragments
-        },
+        "fragments": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path, _ in fragments},
     }
     merged["metadata"]["merge_conflicts"] = conflicts
-    # Record the currently installed Skill rather than copying/freeze-pinning it
-    # into the run. The receipt is diagnostic; compatibility is decided by schema.
     try:
         from record_skill_version import aggregate_fingerprint, skill_files
 
@@ -354,7 +337,7 @@ def main() -> int:
             "algorithm": "sha256",
             "skill": aggregate_fingerprint(skill_root, skill_files(skill_root)),
         }
-    except Exception as error:  # Fingerprinting never blocks a story-data merge.
+    except Exception as error:  # Diagnostic fingerprinting must never destroy an otherwise valid merge.
         print(f"警告：未能记录 Skill 指纹（{error}）", file=sys.stderr)
     merged["metadata"]["id_canonicalization"] = id_mapping
     merged["metadata"]["relation_canonicalization"] = relation_canonicalization
@@ -365,23 +348,16 @@ def main() -> int:
     merged["metadata"]["level_conversion_canonicalization"] = conversion_notes
     merged["metadata"]["alias_canonicalization"] = alias_notes
     merged["metadata"]["notes"] = unique(metadata_notes)
+
     if args.manifest:
         try:
             manifest = json.loads(args.manifest.resolve().read_text(encoding="utf-8"))
-            # The manifest describes the whole prepared novel, so it may only
-            # supply provenance and the chapter title map -- never the analyzed
-            # range. Unioning prepared_chapters in here used to inflate coverage
-            # to every chapter that was split into a file, which made
-            # validate_graph's chapter_outside_coverage check vacuous and let the
-            # page advertise chapters nobody had read.
             for field in ("title", "source_file", "source_sha256"):
                 if field in manifest:
                     merged["metadata"][field] = manifest[field]
             if not merged["metadata"].get("analyzed_chapters"):
                 fallback = manifest.get("prepared_chapters") or manifest.get("analyzed_chapters") or []
-                merged["metadata"]["analyzed_chapters"] = sorted(
-                    c for c in fallback if isinstance(c, int)
-                )
+                merged["metadata"]["analyzed_chapters"] = sorted(chapter for chapter in fallback if isinstance(chapter, int))
                 if merged["metadata"]["analyzed_chapters"]:
                     merged["metadata"]["chapter_start"] = min(merged["metadata"]["analyzed_chapters"])
                     merged["metadata"]["chapter_end"] = max(merged["metadata"]["analyzed_chapters"])
@@ -389,18 +365,11 @@ def main() -> int:
             print(f"ERROR reading manifest {args.manifest}: {exc}", file=sys.stderr)
             return 2
 
-    # The metadata merge unions every fragment's chapter_range into one flat
-    # list; collapse it to the single analyzed span so the metadata stays
-    # readable and cannot be mistaken for a chapter-by-chapter coverage claim.
     if merged["metadata"].get("analyzed_chapters"):
-        merged["metadata"]["chapter_range"] = [
-            merged["metadata"]["chapter_start"],
-            merged["metadata"]["chapter_end"],
-        ]
+        merged["metadata"]["chapter_range"] = [merged["metadata"]["chapter_start"], merged["metadata"]["chapter_end"]]
 
     output = args.output.resolve()
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_json(output, merged, trailing_newline=False)
     summary = {
         "output": str(output),
         "counts": {name: len(merged[name]) for name in ARRAYS},

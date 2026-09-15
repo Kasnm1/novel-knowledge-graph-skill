@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Build deterministic, derived contracts for one novel-graph run.
 
-The graph and source manifest remain source artifacts.  This command only
-writes three derived contracts in the run directory and deliberately retains
-unknown fields already present in those contracts for human annotations.
+The graph and source manifest remain source artifacts. This command only writes
+three derived contracts in the run directory and deliberately retains unknown
+fields already present in those contracts for human annotations. Contract files
+are published atomically so interruption cannot leave a truncated approval or
+coverage ledger.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -17,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from io_utils import atomic_write_json
 
 DERIVED_PROFILE_KEYS = {
     "schema_version", "title", "source", "chapter_range", "validation",
@@ -24,14 +26,11 @@ DERIVED_PROFILE_KEYS = {
 }
 DERIVED_COVERAGE_KEYS = {"schema_version", "chapters", "summary", "derived_at"}
 DERIVED_SNAPSHOT_KEYS = {
-    "schema_version", "artifacts", "validation", "approval", "warnings",
-    "created_at",
+    "schema_version", "artifacts", "validation", "approval", "warnings", "created_at",
 }
 
 
 def canonical_bytes(value: Any) -> bytes:
-    """Return the one JSON representation used for every contract hash."""
-
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
@@ -54,7 +53,7 @@ def read_object(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, value: Mapping[str, Any]) -> None:
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_json(path, dict(value), sort_keys=True)
 
 
 def int_set(value: Any) -> set[int]:
@@ -62,19 +61,12 @@ def int_set(value: Any) -> set[int]:
 
 
 def chapter_end_from_directory(name: str) -> int | None:
-    """Infer an explicitly-labelled chapter range endpoint from a run name.
-
-    An unlabelled number is intentionally ignored: dates and version numbers in
-    run names must not become coverage facts.
-    """
-
+    """Infer an explicitly-labelled chapter range endpoint from a run name."""
     match = re.search(
         r"(?i)(?:^|[_\-\s])ch(?:apter)?s?[_\-\s]*(\d+)(?:[_\-\s]*(?:to|[-–—])[_\-\s]*(\d+))?(?:$|[_\-\s])",
         name,
     )
-    if not match:
-        return None
-    return int(match.group(2) or match.group(1))
+    return int(match.group(2) or match.group(1)) if match else None
 
 
 def _chapter_values(*values: Any) -> set[int]:
@@ -86,17 +78,16 @@ def _chapter_values(*values: Any) -> set[int]:
 
 def build_coverage(manifest: Mapping[str, Any], graph: Mapping[str, Any], validation: Mapping[str, Any]) -> dict[str, Any]:
     """Build per-chapter state without promoting preparation into analysis."""
-
     metadata = graph.get("metadata") if isinstance(graph.get("metadata"), dict) else {}
     prepared = int_set(manifest.get("prepared_chapters"))
     analyzed = int_set(metadata.get("analyzed_chapters"))
-    # A graph-wide successful validation validates the graph's analyzed claims;
-    # it says nothing about merely prepared source chapters.
     validated = analyzed if validation.get("valid") is True else set()
     rendered = _chapter_values(metadata.get("rendered_chapters"), manifest.get("rendered_chapters"))
     excluded = _chapter_values(
-        manifest.get("excluded_chapters"), manifest.get("missing_chapters"),
-        manifest.get("missing_chapters_source_gap"), manifest.get("missing_chapters_unresolved"),
+        manifest.get("excluded_chapters"),
+        manifest.get("missing_chapters"),
+        manifest.get("missing_chapters_source_gap"),
+        manifest.get("missing_chapters_unresolved"),
     )
     all_chapters = prepared | analyzed | validated | rendered | excluded
     rows = [
@@ -125,8 +116,6 @@ def build_coverage(manifest: Mapping[str, Any], graph: Mapping[str, Any], valida
 
 
 def preserve_and_replace(existing: Mapping[str, Any], replacement: Mapping[str, Any], derived_keys: set[str]) -> dict[str, Any]:
-    """Keep human/unknown fields while replacing only documented derived keys."""
-
     output = dict(existing)
     for key in derived_keys:
         output.pop(key, None)
@@ -149,8 +138,6 @@ def build_contracts(
     approval_status: str | None = None,
     approved_by: str | None = None,
 ) -> dict[str, Any]:
-    """Create the three contracts and return their JSON objects for callers/tests."""
-
     run_dir = run_dir.resolve()
     graph_path = run_dir / "graph.json"
     validation_path = run_dir / "validation.json"
@@ -180,13 +167,19 @@ def build_contracts(
         "schema_version": "1.0",
         "title": metadata.get("title") or source.get("title"),
         "source": {"file": source.get("source_file"), "sha256": source.get("source_sha256")},
-        "chapter_range": {"start": metadata.get("chapter_start", source.get("chapter_start")), "end": metadata.get("chapter_end", source.get("chapter_end"))},
+        "chapter_range": {
+            "start": metadata.get("chapter_start", source.get("chapter_start")),
+            "end": metadata.get("chapter_end", source.get("chapter_end")),
+        },
         "validation": {"valid": validation.get("valid") is True, "sha256": sha256_file(validation_path)},
         "vocabulary_sha256": sha256_file(vocabulary_path),
         "approval": approval,
         "derived_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }, DERIVED_PROFILE_KEYS)
     coverage = preserve_and_replace(existing_coverage, build_coverage(source, graph, validation), DERIVED_COVERAGE_KEYS)
+
+    # Profile and coverage are written before the snapshot because their hashes
+    # are part of the snapshot contract. Every individual replacement is atomic.
     write_json(profile_path, profile)
     write_json(coverage_path, coverage)
 
@@ -194,9 +187,7 @@ def build_contracts(
     named_end = chapter_end_from_directory(run_dir.name)
     graph_end = metadata.get("chapter_end")
     if named_end is not None and isinstance(graph_end, int) and named_end != graph_end:
-        warnings.append(
-            f"run directory chapter end {named_end} disagrees with graph metadata.chapter_end {graph_end}"
-        )
+        warnings.append(f"run directory chapter end {named_end} disagrees with graph metadata.chapter_end {graph_end}")
     valid = validation.get("valid") is True
     snapshot = preserve_and_replace(existing_snapshot, {
         "schema_version": "1.0",
@@ -209,9 +200,11 @@ def build_contracts(
             "coverage": sha256_file(coverage_path),
         },
         "validation": {"valid": valid},
-        # Approval is a separate human decision.  A valid graph remains draft
-        # unless it was explicitly approved.
-        "approval": {"status": status, "approved": valid and status == "approved", "approved_by": chosen_approver},
+        "approval": {
+            "status": status,
+            "approved": valid and status == "approved",
+            "approved_by": chosen_approver,
+        },
         "warnings": warnings,
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }, DERIVED_SNAPSHOT_KEYS)
