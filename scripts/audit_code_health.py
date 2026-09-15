@@ -5,6 +5,8 @@ The audit intentionally distinguishes hard safety/correctness smells from
 legacy maintainability debt. Hard findings fail ``--strict``; large modules,
 long functions, broad exception handlers and legacy registry drift are reported
 as warnings so they can be reduced without turning the first audit into noise.
+Test modules are excluded from hard production scanning because controlled
+monkey-patching is a legitimate test technique.
 """
 from __future__ import annotations
 
@@ -34,8 +36,6 @@ class Visitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        # Imported symbols are local bindings; assigning them is not process-wide
-        # monkey patching, so only module imports matter for the attribute rule.
         self.generic_visit(node)
 
     def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
@@ -137,17 +137,26 @@ def registry_observations(root: Path) -> list[dict[str, Any]]:
     return observations
 
 
+def _production_python_files(root: Path) -> list[Path]:
+    return [
+        path
+        for path in root.rglob("*.py")
+        if path.is_file()
+        and "__pycache__" not in path.parts
+        and not path.name.startswith("test_")
+    ]
+
+
 def run(root: Path) -> dict[str, Any]:
     root = root.resolve()
     errors: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
-    files = [path for path in root.rglob("*.py") if path.is_file() and "__pycache__" not in path.parts]
+    files = _production_python_files(root)
     for path in sorted(files):
         file_errors, file_warnings = audit_file(path)
         errors.extend(file_errors)
         warnings.extend(file_warnings)
-    registry = registry_observations(root)
-    warnings.extend(registry)
+    warnings.extend(registry_observations(root))
     counts: dict[str, int] = {}
     for item in [*errors, *warnings]:
         counts[item["code"]] = counts.get(item["code"], 0) + 1
