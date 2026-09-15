@@ -4,7 +4,9 @@
 The output is a review queue plus a scan receipt. A run is not considered fully
 scanned merely because some candidates were emitted: the receipt records the
 requested/declared range, actual readable chapters, missing inputs, per-kind hit
-and truncation counts, spoiler cutoff and review progress.
+and truncation counts, spoiler cutoff and review progress. Temporal provenance
+for names, summaries, attributes and style observations is also audited so a
+strict reader can hide unknown-timing prose instead of leaking it.
 """
 from __future__ import annotations
 
@@ -33,6 +35,48 @@ def recs(value: Any) -> list[dict[str, Any]]:
 def candidate_key(row: dict[str, Any]) -> str:
     snippet = str(row.get("snippet") or "")[:160]
     return "|".join((str(row.get("candidate_kind") or ""), str(row.get("record_id") or ""), str(row.get("chapter") or ""), snippet))
+
+
+def _meta_chapter(meta: dict[str, Any], field: str, entity_id: str, key: str | None = None) -> int | None:
+    mapping = meta.get(field)
+    if not isinstance(mapping, dict):
+        return None
+    nested = mapping.get(entity_id)
+    if key is None:
+        return nested if isinstance(nested, int) and not isinstance(nested, bool) else None
+    if isinstance(nested, dict):
+        value = nested.get(key)
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+    return None
+
+
+def temporal_provenance_candidates(graph: dict[str, Any]) -> list[dict[str, Any]]:
+    meta = graph.get("metadata") if isinstance(graph.get("metadata"), dict) else {}
+    out: list[dict[str, Any]] = []
+
+    def add(kind: str, record_id: Any, reason: str, chapter: Any = None, related_ids: list[Any] | None = None) -> None:
+        out.append({"candidate_kind": kind, "record_id": record_id, "chapter": chapter, "related_ids": [x for x in (related_ids or []) if x], "reason": reason, "status": "unresolved"})
+
+    for entity in recs(graph.get("entities")):
+        eid = entity.get("id")
+        if not isinstance(eid, str):
+            continue
+        if entity.get("name") and not recs(entity.get("name_history")) and not isinstance(entity.get("name_first_chapter"), int) and _meta_chapter(meta, "name_first_chapter", eid) is None:
+            add("temporal_name", eid, "正式名缺少 name_history / name_first_chapter；历史章节无法证明何时可见", entity.get("first_chapter"), [eid])
+        if entity.get("summary") not in (None, "") and not recs(entity.get("summary_history")):
+            timed = isinstance(entity.get("summary_chapter"), int) or isinstance(entity.get("summary_first_chapter"), int) or _meta_chapter(meta, "summary_first_chapter", eid) is not None
+            if not timed:
+                add("temporal_summary", eid, "summary 缺少时间来源；严格防剧透模式会在历史章节隐藏", entity.get("first_chapter"), [eid])
+        attributes = entity.get("attributes")
+        if isinstance(attributes, dict) and attributes:
+            covered = {str(row.get("key") or row.get("attribute")) for row in recs(entity.get("attribute_history")) + recs(entity.get("attributes_history")) if row.get("key") or row.get("attribute")}
+            missing = [key for key in attributes if key not in covered and _meta_chapter(meta, "attribute_first_chapter", eid, key) is None]
+            if missing:
+                add("temporal_attribute", eid, "attributes 缺少时间来源：" + ", ".join(sorted(missing)[:20]), entity.get("first_chapter"), [eid])
+    for obs in recs(graph.get("style_observations")):
+        if not any(isinstance(obs.get(field), int) and not isinstance(obs.get(field), bool) for field in ("chapter", "chapter_start", "valid_from")):
+            add("temporal_style", obs.get("id"), "style observation 缺少 chapter/chapter_start/valid_from；严格历史视图会隐藏", related_ids=[obs.get("entity_id"), obs.get("character_id")])
+    return out
 
 
 def structural_candidates(graph: dict[str, Any], relation_gap_threshold: int = 3) -> list[dict[str, Any]]:
@@ -75,6 +119,7 @@ def structural_candidates(graph: dict[str, Any], relation_gap_threshold: int = 3
     for pair,count in counts.items():
         if count >= relation_gap_threshold and pair not in related:
             add("side_relation", ":".join(pair), f"共同事件 {count} 次但无人物关系边", related_ids=list(pair)+pair_events[pair][:10])
+    out.extend(temporal_provenance_candidates(graph))
     return out
 
 
@@ -107,19 +152,7 @@ def scan_text_candidates(index: Path, *, chapter_start: int | None, chapter_end:
                 lo=max(0,match.start()-60); hi=min(len(text),match.end()+100)
                 rows.append({"candidate_kind":kind,"chapter":chapter,"record_id":None,"related_ids":[],"reason":"source_keyword_candidate","snippet":text[lo:hi].replace("\n"," "),"status":"unresolved"})
     requested_declared=[c for c in declared if (chapter_start is None or c>=chapter_start) and (chapter_end is None or c<=chapter_end) and (cutoff is None or c<=cutoff)]
-    audit={
-        "index":str(index),
-        "declared_chapter_range":[min(declared),max(declared)] if declared else None,
-        "requested_chapter_range":[min(requested_declared),max(requested_declared)] if requested_declared else None,
-        "actual_read_chapter_range":[min(read),max(read)] if read else None,
-        "declared_chapters_in_scope":len(set(requested_declared)),
-        "actual_read_chapters":len(set(read)),
-        "missing_or_unreadable":missing,
-        "malformed_index_rows":malformed,
-        "cutoff":cutoff,
-        "per_kind":stats,
-        "max_hits_per_kind_per_chapter":max_hits,
-    }
+    audit={"index":str(index),"declared_chapter_range":[min(declared),max(declared)] if declared else None,"requested_chapter_range":[min(requested_declared),max(requested_declared)] if requested_declared else None,"actual_read_chapter_range":[min(read),max(read)] if read else None,"declared_chapters_in_scope":len(set(requested_declared)),"actual_read_chapters":len(set(read)),"missing_or_unreadable":missing,"malformed_index_rows":malformed,"cutoff":cutoff,"per_kind":stats,"max_hits_per_kind_per_chapter":max_hits}
     return rows,audit
 
 
@@ -136,35 +169,23 @@ def carry_review_progress(rows: list[dict[str, Any]], previous: dict[str, Any] |
 
 
 def build_output(graph: dict[str, Any], *, chapters_jsonl: Path | None = None, relation_gap_threshold: int = 3, chapter_start: int | None = None, chapter_end: int | None = None, cutoff: int | None = None, max_hits: int = 20, previous: dict[str, Any] | None = None) -> dict[str, Any]:
-    scoped=filter_graph(graph, cutoff, strict=True) if cutoff is not None else graph
+    scoped=filter_graph(graph,cutoff,strict=True) if cutoff is not None else graph
     rows=structural_candidates(scoped,max(1,relation_gap_threshold))
     text_audit={"cutoff":cutoff,"declared_chapters_in_scope":0,"actual_read_chapters":0,"missing_or_unreadable":[],"malformed_index_rows":[],"per_kind":{}}
     if chapters_jsonl is not None:
         if not chapters_jsonl.exists(): raise FileNotFoundError(chapters_jsonl)
-        text_rows,text_audit=scan_text_candidates(chapters_jsonl,chapter_start=chapter_start,chapter_end=chapter_end,cutoff=cutoff,max_hits=max_hits)
-        rows.extend(text_rows)
+        text_rows,text_audit=scan_text_candidates(chapters_jsonl,chapter_start=chapter_start,chapter_end=chapter_end,cutoff=cutoff,max_hits=max_hits); rows.extend(text_rows)
     carry_review_progress(rows, previous)
     counts=Counter(row["candidate_kind"] for row in rows); progress=Counter(row.get("status","unresolved") for row in rows)
-    audit={
-        "chapter_start":chapter_start,"chapter_end":chapter_end,"cutoff":cutoff,
-        "structural_candidates":sum(1 for r in rows if r.get("reason")!="source_keyword_candidate"),
-        "text_scan":text_audit,
-        "candidate_counts":dict(counts),
-        "review_progress":{"unresolved":progress["unresolved"],"confirmed":progress["confirmed"],"excluded":progress["excluded"],"total":len(rows)},
-        "complete": not text_audit.get("missing_or_unreadable") and not text_audit.get("malformed_index_rows"),
-    }
+    audit={"chapter_start":chapter_start,"chapter_end":chapter_end,"cutoff":cutoff,"structural_candidates":sum(1 for r in rows if r.get("reason")!="source_keyword_candidate"),"text_scan":text_audit,"candidate_counts":dict(counts),"temporal_provenance_candidates":sum(counts[k] for k in ("temporal_name","temporal_summary","temporal_attribute","temporal_style")),"review_progress":{"unresolved":progress["unresolved"],"confirmed":progress["confirmed"],"excluded":progress["excluded"],"total":len(rows)},"complete":not text_audit.get("missing_or_unreadable") and not text_audit.get("malformed_index_rows")}
     return {"candidates":rows,"counts":dict(counts),"audit":audit}
 
 
 def main() -> int:
-    p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--graph",required=True,type=Path); p.add_argument("--output",required=True,type=Path); p.add_argument("--chapters-jsonl",type=Path)
-    p.add_argument("--relation-gap-threshold",type=int,default=3); p.add_argument("--chapter-start",type=int); p.add_argument("--chapter-end",type=int); p.add_argument("--cutoff",type=int)
-    p.add_argument("--max-text-hits-per-kind-per-chapter",type=int,default=20); p.add_argument("--previous",type=Path,help="Prior candidate file whose review status should be carried forward")
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument("--graph",required=True,type=Path);p.add_argument("--output",required=True,type=Path);p.add_argument("--chapters-jsonl",type=Path);p.add_argument("--relation-gap-threshold",type=int,default=3);p.add_argument("--chapter-start",type=int);p.add_argument("--chapter-end",type=int);p.add_argument("--cutoff",type=int);p.add_argument("--max-text-hits-per-kind-per-chapter",type=int,default=20);p.add_argument("--previous",type=Path,help="Prior candidate file whose review status should be carried forward")
     args=p.parse_args(); graph=json.loads(args.graph.read_text(encoding="utf-8")); previous=json.loads(args.previous.read_text(encoding="utf-8")) if args.previous else None
     result=build_output(graph,chapters_jsonl=args.chapters_jsonl,relation_gap_threshold=args.relation_gap_threshold,chapter_start=args.chapter_start,chapter_end=args.chapter_end,cutoff=args.cutoff,max_hits=max(1,args.max_text_hits_per_kind_per_chapter),previous=previous)
-    args.output.parent.mkdir(parents=True,exist_ok=True); args.output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
-    print(json.dumps({"output":str(args.output),"candidates":len(result["candidates"]),"audit_complete":result["audit"]["complete"],"review_progress":result["audit"]["review_progress"]},ensure_ascii=False))
-    return 0 if result["audit"]["complete"] else 2
+    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
+    print(json.dumps({"output":str(args.output),"candidates":len(result["candidates"]),"audit_complete":result["audit"]["complete"],"temporal_provenance_candidates":result["audit"]["temporal_provenance_candidates"],"review_progress":result["audit"]["review_progress"]},ensure_ascii=False));return 0 if result["audit"]["complete"] else 2
 
-if __name__=="__main__": raise SystemExit(main())
+if __name__=="__main__":raise SystemExit(main())
