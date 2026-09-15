@@ -1,0 +1,24 @@
+name: Expansion tests
+
+on:
+  push:
+    branches:
+      - feature/full-knowledge-graph-expansion
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python
+        run: python -m compileall -q scripts
+      - name: Run repository tests
+        env:
+          PYTHONPATH: scripts
+        run: python -m unittest discover -s scripts -p 'test_*.py'
