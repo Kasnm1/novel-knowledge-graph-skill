@@ -87,7 +87,10 @@ class FinalDeliveryTests(unittest.TestCase):
     def test_gc_apply_failure_rolls_back_prior_moves(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td); good=root/"a.tmp"; good.write_text("good",encoding="utf-8"); archive=root/"_gc_archive"/"failcase"
-            plan={"schema_version":2,"root":str(root.resolve()),"archive":str(archive.resolve()),"status":"planned","created_at":"fixture","bytes":4,"operations":[{"source":"a.tmp","destination":"_gc_archive/failcase/a.tmp","fingerprint":{"path":"a.tmp","kind":"file","size":4,"sha256":""},"status":"planned"},{"source":"missing.tmp","destination":"_gc_archive/failcase/missing.tmp","fingerprint":{"path":"missing.tmp","kind":"file","size":0,"sha256":""},"status":"planned"}]}
+            # Build a real current-schema plan so the first move has a valid
+            # fingerprint, then append a source that disappears before apply.
+            plan=build_plan(root,archive)
+            plan["operations"].append({"source":"missing.tmp","destination":"_gc_archive/failcase/missing.tmp","fingerprint":{"path":"missing.tmp","kind":"file","size":0,"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},"status":"planned"})
             with self.assertRaises(FileNotFoundError): apply_plan(root,archive,plan)
             self.assertTrue(good.exists()); self.assertEqual(load_manifest(archive,root)["status"],"rolled_back")
 
