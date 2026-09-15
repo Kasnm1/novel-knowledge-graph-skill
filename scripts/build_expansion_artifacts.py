@@ -2,9 +2,9 @@
 """Fail-closed one-command build for the final artifact set.
 
 Every subprocess result is recorded. A build is successful only when every
-required step returns zero and every declared artifact exists. The manifest is
-written atomically even on failure so a crash cannot leave a truncated manifest
-that looks like a complete delivery.
+required step returns zero and every declared artifact exists. Complete prior
+builds may be reused only when all input, parameter, implementation and artifact
+fingerprints still match. The manifest is always written atomically.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from io_utils import atomic_write_json
+from nkg.core.cache import build_cache_key, verify_artifact_manifest
 
 
 def digest(path: Path) -> dict[str, Any]:
@@ -67,6 +68,18 @@ def write_manifest(path: Path, manifest: dict[str, Any]) -> None:
     atomic_write_json(path, manifest)
 
 
+def implementation_files(scripts: Path) -> list[Path]:
+    names = (
+        "build_expansion_artifacts.py", "validate_full_graph.py", "validate_graph.py",
+        "extension_contracts.py", "filter_graph_asof.py", "derive_novel_views.py",
+        "build_quality_report.py", "build_provenance_index.py", "build_unified_dashboard.py",
+        "build_expansion_candidates.py", "build_reader_overlay.py", "build_snapshot_checkpoints.py",
+    )
+    files = [scripts / name for name in names]
+    files.extend((scripts / "nkg").rglob("*.py"))
+    return [path for path in files if path.is_file()]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--graph", required=True, type=Path)
@@ -77,12 +90,8 @@ def main() -> int:
     parser.add_argument("--cutoff", type=int)
     parser.add_argument("--protagonist-id", action="append", default=[])
     parser.add_argument("--checkpoint-interval", type=int, default=0, help="Prebuild strict snapshot checkpoints; 0 disables")
-    parser.add_argument(
-        "--step-timeout",
-        type=float,
-        default=0,
-        help="Optional per-subprocess timeout in seconds; 0 disables the timeout.",
-    )
+    parser.add_argument("--no-cache", action="store_true", help="Force a rebuild even if a fingerprint-identical complete build exists")
+    parser.add_argument("--step-timeout", type=float, default=0, help="Optional per-subprocess timeout in seconds; 0 disables the timeout.")
     args = parser.parse_args()
     if args.step_timeout < 0:
         parser.error("--step-timeout must be >= 0")
@@ -90,20 +99,53 @@ def main() -> int:
         parser.error("--checkpoint-interval must be >= 0")
 
     scripts = Path(__file__).resolve().parent
-    out = args.output_dir
+    out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     manifest_path = out / "artifact-manifest.json"
     timeout = args.step_timeout or None
     build_started = time.perf_counter()
+
+    cache_key, cache_material = build_cache_key(
+        input_files={
+            "graph": args.graph.resolve(),
+            "source_manifest": args.manifest.resolve() if args.manifest else None,
+            "chapters_jsonl": args.chapters_jsonl.resolve() if args.chapters_jsonl else None,
+            "collection_manifest": args.collection_manifest.resolve() if args.collection_manifest else None,
+        },
+        parameters={
+            "cutoff": args.cutoff,
+            "protagonist_ids": sorted(args.protagonist_id),
+            "checkpoint_interval": args.checkpoint_interval,
+        },
+        implementation_files=implementation_files(scripts),
+    )
+
+    if not args.no_cache and manifest_path.is_file():
+        try:
+            previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            previous = None
+        if isinstance(previous, dict) and previous.get("build_cache_key") == cache_key:
+            valid_cache, cache_errors = verify_artifact_manifest(previous)
+            if valid_cache:
+                previous["cache_reused_at"] = datetime.now(timezone.utc).isoformat()
+                previous["last_invocation_duration_ms"] = round((time.perf_counter() - build_started) * 1000, 3)
+                write_manifest(manifest_path, previous)
+                print(json.dumps({"status": "reused", "manifest": str(manifest_path), "build_cache_key": cache_key}, ensure_ascii=False))
+                return 0
+            previous["cache_reuse_rejected"] = cache_errors
+
     manifest: dict[str, Any] = {
-        "schema_version": 3,
+        "schema_version": 4,
         "status": "running",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "source_graph": str(args.graph),
+        "source_graph": str(args.graph.resolve()),
         "source_graph_sha256": digest(args.graph)["sha256"],
         "cutoff": args.cutoff,
         "checkpoint_interval": args.checkpoint_interval,
         "step_timeout_seconds": timeout,
+        "build_cache_key": cache_key,
+        "cache_material": cache_material,
         "steps": [],
         "required_artifacts": [],
         "artifacts": [],
@@ -120,16 +162,10 @@ def main() -> int:
         return 1
 
     validate = [
-        sys.executable,
-        scripts / "validate_full_graph.py",
-        "--graph",
-        args.graph,
-        "--base-report",
-        out / "validation-base.json",
-        "--extension-report",
-        out / "validation-expansion.json",
-        "--invariant-report",
-        out / "validation-invariants.json",
+        sys.executable, scripts / "validate_full_graph.py", "--graph", args.graph,
+        "--base-report", out / "validation-base.json",
+        "--extension-report", out / "validation-expansion.json",
+        "--invariant-report", out / "validation-invariants.json",
     ]
     if args.manifest:
         validate += ["--manifest", args.manifest]
@@ -139,12 +175,7 @@ def main() -> int:
     graph = args.graph
     if args.cutoff is not None:
         graph = out / f"graph-asof-{args.cutoff}.json"
-        if run_step(
-            "spoiler-closure",
-            [sys.executable, scripts / "filter_graph_asof.py", "--graph", args.graph, "--chapter", args.cutoff, "--output", graph],
-            manifest,
-            timeout,
-        ):
+        if run_step("spoiler-closure", [sys.executable, scripts / "filter_graph_asof.py", "--graph", args.graph, "--chapter", args.cutoff, "--output", graph], manifest, timeout):
             return fail("spoiler closure failed")
 
     views = out / "novel-views.json"
@@ -155,13 +186,20 @@ def main() -> int:
         return fail("view derivation failed")
 
     quality = out / "quality-report.json"
-    if run_step(
-        "quality",
-        [sys.executable, scripts / "build_quality_report.py", "--graph", graph, "--output", quality],
-        manifest,
-        timeout,
-    ):
+    if run_step("quality", [sys.executable, scripts / "build_quality_report.py", "--graph", graph, "--output", quality], manifest, timeout):
         return fail("quality/invariant report failed")
+
+    provenance = out / "provenance-index.json"
+    if run_step("provenance", [sys.executable, scripts / "build_provenance_index.py", "--graph", graph, "--output", provenance], manifest, timeout):
+        return fail("provenance index failed")
+
+    candidate_command = [sys.executable, scripts / "build_expansion_candidates.py", "--graph", args.graph, "--output", out / "expansion-candidates.json"]
+    if args.chapters_jsonl:
+        candidate_command += ["--chapters-jsonl", args.chapters_jsonl]
+    if args.cutoff is not None:
+        candidate_command += ["--cutoff", args.cutoff]
+    if run_step("candidates", candidate_command, manifest, timeout):
+        return fail("candidate scan incomplete or failed")
 
     dashboard = [sys.executable, scripts / "build_unified_dashboard.py", "--graph", args.graph, "--output-dir", out]
     if args.cutoff is not None:
@@ -173,32 +211,8 @@ def main() -> int:
     if run_step("dashboard", dashboard, manifest, timeout):
         return fail("dashboard build failed")
 
-    candidate_command = [
-        sys.executable,
-        scripts / "build_expansion_candidates.py",
-        "--graph",
-        args.graph,
-        "--output",
-        out / "expansion-candidates.json",
-    ]
     if args.chapters_jsonl:
-        candidate_command += ["--chapters-jsonl", args.chapters_jsonl]
-    if args.cutoff is not None:
-        candidate_command += ["--cutoff", args.cutoff]
-    if run_step("candidates", candidate_command, manifest, timeout):
-        return fail("candidate scan incomplete or failed")
-
-    if args.chapters_jsonl:
-        reader = [
-            sys.executable,
-            scripts / "build_reader_overlay.py",
-            "--graph",
-            args.graph,
-            "--chapters-jsonl",
-            args.chapters_jsonl,
-            "--output",
-            out / "reader.html",
-        ]
+        reader = [sys.executable, scripts / "build_reader_overlay.py", "--graph", args.graph, "--chapters-jsonl", args.chapters_jsonl, "--output", out / "reader.html"]
         if args.cutoff is not None:
             reader += ["--cutoff", args.cutoff]
         if run_step("reader", reader, manifest, timeout):
@@ -207,25 +221,14 @@ def main() -> int:
     checkpoint_manifest: Path | None = None
     if args.checkpoint_interval:
         checkpoint_dir = out / "checkpoints"
-        checkpoint_command = [
-            sys.executable,
-            scripts / "build_snapshot_checkpoints.py",
-            "--graph", graph,
-            "--output-dir", checkpoint_dir,
-            "--interval", args.checkpoint_interval,
-        ]
+        checkpoint_command = [sys.executable, scripts / "build_snapshot_checkpoints.py", "--graph", graph, "--output-dir", checkpoint_dir, "--interval", args.checkpoint_interval]
         if run_step("checkpoints", checkpoint_command, manifest, timeout):
             return fail("snapshot checkpoint build failed")
         checkpoint_manifest = checkpoint_dir / "checkpoint-manifest.json"
 
     required = [
-        out / "validation-base.json",
-        out / "validation-expansion.json",
-        out / "validation-invariants.json",
-        views,
-        quality,
-        out / "dashboard.html",
-        out / "expansion-candidates.json",
+        out / "validation-base.json", out / "validation-expansion.json", out / "validation-invariants.json",
+        views, quality, provenance, out / "dashboard.html", out / "expansion-candidates.json",
     ]
     if args.cutoff is not None:
         required.append(graph)
@@ -244,11 +247,8 @@ def main() -> int:
     manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
     write_manifest(manifest_path, manifest)
     print(json.dumps({
-        "status": "complete",
-        "manifest": str(manifest_path),
-        "dashboard": str(out / "dashboard.html"),
-        "views": str(views),
-        "quality": str(quality),
+        "status": "complete", "manifest": str(manifest_path), "dashboard": str(out / "dashboard.html"),
+        "views": str(views), "quality": str(quality), "provenance": str(provenance), "build_cache_key": cache_key,
     }, ensure_ascii=False))
     return 0
 
