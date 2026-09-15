@@ -12,6 +12,31 @@ Evidence-backed tooling for turning novels and serialized fiction into replayabl
 - Controlled taxonomies for item roles, ability categories, organization/location hierarchies and relationship lanes.
 - Foreshadowing/payoff tracking, style observations, chapter pacing and bounded AI exports.
 - Deterministic merge, validation, snapshot, audit and dashboard-generation scripts.
+- Growth/world expansion: protagonist achievements, battle records with as-of realms, resources, fictional-world topology, territory replay, side-character relation coverage, commitments, secret/knowledge views, mortality, economy and narrative rhythm.
+- Reader-mode spoiler cutoff, evidence-linked source reader, safe run garbage collection, true-coverage run index, and cross-book trope comparison.
+
+## Growth / world expansion
+
+The expansion keeps `graph.json` as the only story-fact source. It adds exactly one optional top-level fact family, `commitments[]`; achievements, combat tables, inventories, death lists, knowledge matrices and map layouts are derived.
+
+For legacy runs, use the compatibility-aware entry points:
+
+```powershell
+python scripts/check_fragment_expanded.py --fragment <fragment.json> --graph <graph.json>
+python scripts/merge_graph_expanded.py --input <fragments...> --output <graph.json>
+python scripts/validate_full_graph.py --graph <graph.json>
+python scripts/build_expansion_artifacts.py --graph <graph.json> --output-dir <derived-dir>
+```
+
+Optional reader-safe delivery:
+
+```powershell
+python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> --cutoff 300 --output-dir <share-dir>
+```
+
+The extended dashboard includes one chapter slider shared by achievements, battle records, resources, world/territory, skill categories, side-character relations/co-occurrence, commitments/favors, secret propagation, foreshadowing/payoff, level progression, chapter rhythm, romance milestones, mortality/inheritance, economy and rules.
+
+See `references/expansion-schema.md` and `references/expansion-workflows.md`.
 
 ## Install
 
