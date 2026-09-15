@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import os
 import shutil
 import tempfile
 import time
@@ -14,15 +14,28 @@ try:
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.common.by import By
-except ImportError:  # Local stdlib-only runs may skip; CI installs Selenium.
+except ImportError:  # Local stdlib-only runs may skip; CI requires Selenium.
     webdriver = None
 
 
-@unittest.skipIf(webdriver is None, "selenium not installed")
 class BrowserAcceptanceTests(unittest.TestCase):
     def setUp(self):
-        chrome = shutil.which("google-chrome") or shutil.which("google-chrome-stable") or shutil.which("chromium") or shutil.which("chromium-browser")
+        required = os.environ.get("REQUIRE_BROWSER_TESTS") == "1"
+        if webdriver is None:
+            if required:
+                self.fail("REQUIRE_BROWSER_TESTS=1 but selenium is not installed")
+            self.skipTest("selenium not installed")
+        chrome = (
+            os.environ.get("CHROME_BIN")
+            or shutil.which("google-chrome")
+            or shutil.which("google-chrome-stable")
+            or shutil.which("chrome")
+            or shutil.which("chromium")
+            or shutil.which("chromium-browser")
+        )
         if not chrome:
+            if required:
+                self.fail("REQUIRE_BROWSER_TESTS=1 but Chrome/Chromium is not installed")
             self.skipTest("Chrome/Chromium not installed")
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
@@ -85,12 +98,16 @@ class BrowserAcceptanceTests(unittest.TestCase):
         self.assertNotIn("早期名", skills)  # holder relation begins at chapter 8
         narrative = self.open_tab("写法")
         self.assertNotIn(FUTURE, narrative)
+        repository = self.open_tab("仓库")
+        self.assertNotIn(FUTURE, repository)
+        self.assertNotIn("最终正式名", repository)
 
         self.set_chapter(8)
         self.assertIn("fulfilled", self.open_tab("承诺"))
         self.assertIn("99", self.open_tab("资源"))
         self.assertIn("最终正式名", self.open_tab("技能"))
         self.assertIn(FUTURE, self.open_tab("写法"))
+        self.assertIn("最终正式名", self.open_tab("仓库"))
 
         severe = [row for row in self.driver.get_log("browser") if row.get("level") == "SEVERE"]
         self.assertEqual(severe, [], severe)
