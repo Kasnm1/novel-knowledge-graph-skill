@@ -94,6 +94,14 @@ class EntityProfileContractTests(unittest.TestCase):
         self.assertIn("focused-evidence", source)
         self.assertIn("chapterForEvidence", source)
 
+    def test_unified_dashboard_restores_light_reader_first_theme(self):
+        source = build_html(build_model(detail_graph()))
+        self.assertIn("color-scheme:light", source)
+        self.assertIn("--accent:#6157d8", source)
+        self.assertIn("感情 / 亲密", source)
+        self.assertIn("entity-card", source)
+        self.assertIn("radial-gradient", source)
+
 
 class EntityDetailBrowserTests(unittest.TestCase):
     def setUp(self):
@@ -136,7 +144,7 @@ class EntityDetailBrowserTests(unittest.TestCase):
 
     def open_first_entity(self) -> str:
         self.open_tab("仓库")
-        self.driver.find_elements(By.CSS_SELECTOR, "#main tbody tr")[0].click(); time.sleep(0.04)
+        self.driver.find_elements(By.CSS_SELECTOR, "#main [data-entity-id]")[0].click(); time.sleep(0.04)
         return self.driver.find_element(By.ID, "nkgEntityDrawer").text
 
     def test_entity_detail_makes_first_appearance_and_important_attributes_obvious(self):
@@ -150,9 +158,6 @@ class EntityDetailBrowserTests(unittest.TestCase):
         self.assertNotIn("后期重要属性", text)
         self.assertNotIn("后期信息", text)
 
-        # Exercise the same UI close function directly; WebDriver can classify a
-        # transformed fixed-position close button as non-interactable in headless
-        # mode even when the drawer itself is rendered and usable.
         self.driver.execute_script("nkgCloseEntity()")
         self.set_chapter(6)
         text = self.open_first_entity()
@@ -162,8 +167,9 @@ class EntityDetailBrowserTests(unittest.TestCase):
     def test_snapshot_diff_and_quality_are_in_same_dashboard(self):
         labels = [x.text for x in self.driver.find_elements(By.CSS_SELECTOR, "#tabs button")]
         self.assertIn("变化", labels)
+        self.assertIn("感情 / 亲密", labels)
         self.open_tab("变化")
-        self.assertIn("快照变化", self.driver.find_element(By.ID, "main").text)
+        self.assertIn("章节变化", self.driver.find_element(By.ID, "main").text)
         self.open_tab("审计")
         audit = self.driver.find_element(By.ID, "main").text
         self.assertIn("证据引用覆盖", audit)
