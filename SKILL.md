@@ -78,6 +78,45 @@ For the user's `any intimate act` tracking rule, every protagonist-linked direct
 
 Source-candidate gaps and unresolved mandatory route candidates block a completeness claim. Candidate scanners may over-recall; they produce review work, not automatic facts.
 
+## Growth, world, commitments and narrative expansion
+
+Read `references/expansion-schema.md` whenever extracting, merging, auditing, backfilling, validating or rendering any of the following: achievements, combat results, resources, skill categories, fictional geography, territory control, side-character relationship coverage, commitments, favors, secrets/knowledge, economy, mortality, inheritance, story-time, cliffhangers or payoff structure.
+
+The expansion follows one strict rule: **`commitments[]` is the only new top-level story-fact array.** Do not create `achievements[]`, `duels[]`, `inventory[]`, `secrets[]`, `deaths[]` or `territories[]`. Those are derived products from canonical facts.
+
+- Battle results live in optional `events[].combat`; battle-time realms are replayed from state history at the event chapter and are never copied into combat records.
+- Transactions, mortality, information flow and payoff semantics live in optional event facets, not new event types.
+- Keep `events[].type` small and reusable; put narrative specificity into controlled tags/facets. Do not reintroduce event-type inflation.
+- Skills use controlled multi-valued `categories`; unknown categories become unresolved review work rather than improvised labels.
+- Fictional geography uses `located_in` / `part_of`; territory ownership uses temporal `controlled_by`. Never fabricate geographic coordinates. Layout coordinates are derived UI data only.
+- Repeated resources use item entities, `item_roles`, targeted quantity state changes, and `cause_event_id -> event.location_id` for acquisition provenance.
+- Favors use `owes_favor_to`; secrets remain `concept` entities plus `knowledge` changes; material promises/oaths/wagers use `commitments[]`.
+- Side-character co-occurrence generates relationship candidates only. It never proves friendship, hostility, kinship or membership.
+- `chapter_summaries` may carry source-faithful `story_time`, `pov_entity_ids`, `scene_count` and controlled `cliffhanger_type`.
+
+For legacy runs, first derive what is already recoverable, then scan bounded candidates, then reread only the evidence closure around unresolved candidates. Every candidate must be confirmed, excluded, or left explicitly unresolved.
+
+Use the expansion-aware publish entry points when the new contract is in scope:
+
+```powershell
+python scripts/check_fragment_expanded.py --fragment <fragment.json> --graph <graph.json>
+python scripts/merge_graph_expanded.py --input <fragments...> --output <graph.json>
+python scripts/validate_full_graph.py --graph <graph.json>
+python scripts/build_expansion_artifacts.py --graph <graph.json> --output-dir <derived-dir>
+```
+
+`validate_full_graph.py` keeps historical structural validation separate from expansion validation/coverage. A zero denominator is reported as “not evaluated”, never as a completeness pass.
+
+The expanded dashboard is chapter-synchronized and may include protagonist achievements, combat records, resources, world topology/territory replay, skills, relation gaps/co-occurrence, commitments/favors, knowledge propagation, foreshadowing/payoff, levels, chapter rhythm, romance milestones, mortality/inheritance, economy, rules, narrative voice and coverage audits. All are derived and disposable.
+
+For external sharing, use an as-of build before view construction, not post-render hiding:
+
+```powershell
+python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> --cutoff <N> --output-dir <share-dir>
+```
+
+This filters future entities, aliases with known timing, evidence, events, relations, milestones and payoffs before counters/search/tooltips are built.
+
 ## Merge and concurrency
 
 Workers write immutable fragments under isolated task IDs and include their base snapshot/version. They do not edit the canonical graph directly.
