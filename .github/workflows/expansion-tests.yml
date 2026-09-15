@@ -11,14 +11,25 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Set up ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+      - name: Install browser test dependency
+        run: python -m pip install --disable-pip-version-check selenium
+      - name: Browser versions
+        run: |
+          google-chrome --version || chrome --version || chromium --version
+          chromedriver --version
       - name: Compile Python
         run: python -m compileall -q scripts
-      - name: Run repository tests
+      - name: Run repository and final-delivery tests
         env:
           PYTHONPATH: scripts
         run: python -m unittest discover -s scripts -p 'test_*.py'
