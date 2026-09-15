@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "book_id": "",
+  "run_id": "",
+  "operation_mode": "extract_fragment",
+  "source_fingerprint": "",
+  "baseline_snapshot_id": "",
+  "skill_fingerprint": "",
+  "task_spec_fingerprint": "",
+  "lock_owner": "",
+  "completed_ranges": [],
+  "next_range": null,
+  "emitted_record_ids": [],
+  "emitted_evidence_ids": [],
+  "unresolved_issue_ids": [],
+  "coverage_receipt_ids": [],
+  "execution_receipt_ids": [],
+  "pending_escalation_triggers": [],
+  "loaded_reference_ids": [],
+  "validation": {
+    "status": "not_run",
+    "gate_ids": []
+  }
+}

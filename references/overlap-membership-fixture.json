@@ -1,0 +1,18 @@
+{
+  "description": "Minimal fixture for deduplicated many-to-many collection and overlapping arc rendering.",
+  "arcs": [
+    {"id": "arc_a", "chapter_start": 20, "chapter_end": 30, "status": "ongoing"},
+    {"id": "arc_b", "chapter_start": 24, "chapter_end": 35, "status": "ongoing", "parent_arc_id": "arc_a"}
+  ],
+  "chapter_memberships": {"24": ["arc_a", "arc_b"]},
+  "collections": [
+    {"id": "c1", "label": "学院", "explicit_members": ["char_1"]},
+    {"id": "c2", "label": "主角盟友", "explicit_members": ["char_1"]},
+    {"id": "c3", "label": "考核篇", "explicit_members": ["char_1"]}
+  ],
+  "expected": {
+    "union_unique_entity_ids": ["char_1"],
+    "intersection_unique_entity_ids": ["char_1"],
+    "chapter_24_visible_arc_ids": ["arc_a", "arc_b"]
+  }
+}

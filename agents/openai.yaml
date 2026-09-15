@@ -1,0 +1,7 @@
+interface:
+  display_name: "小说知识图谱"
+  short_description: "追踪人物、能力、物品、关系与伏笔的完整历史"
+  default_prompt: "使用 $novel-knowledge-graph，把这部小说分析成有原文证据、可回放历史的知识图谱，并生成可点击网页和供其他 AI 使用的文本资料库。"
+  brand_color: "#7C3AED"
+policy:
+  allow_implicit_invocation: true

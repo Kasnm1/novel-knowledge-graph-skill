@@ -1,0 +1,35 @@
+{
+  "fixture_id": "accuracy-context-1",
+  "cases": [
+    {
+      "id": "boundary_scene",
+      "claim_scope": "local_explicit",
+      "required_level": "R1",
+      "must_include": ["semantic_boundary_overlap", "direct_evidence"]
+    },
+    {
+      "id": "item_transfer_at_target_chapter",
+      "claim_scope": "temporal_state",
+      "required_level": "R2",
+      "must_include": ["prior_state", "changes_through_target", "contradictions"]
+    },
+    {
+      "id": "identity_reveal",
+      "claim_scope": "cross_chapter",
+      "required_level": "R3",
+      "must_include": ["aliases", "distant_evidence", "unresolved_candidates"]
+    },
+    {
+      "id": "never_used_skill",
+      "claim_scope": "negative_or_universal",
+      "required_level": "R4",
+      "must_include": ["complete_relevant_coverage", "coverage_receipt"]
+    },
+    {
+      "id": "whole_book_speech_style",
+      "claim_scope": "global_aggregate",
+      "required_level": "R4",
+      "must_include": ["stratified_samples", "counterexamples", "complete_claimed_range"]
+    }
+  ]
+}

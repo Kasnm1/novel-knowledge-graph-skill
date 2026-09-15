@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "receipt_id": "",
+  "operation_mode": "extract_fragment",
+  "claim_scope": "local_explicit",
+  "retrieval_level": "R1",
+  "source_fingerprint": "",
+  "snapshot_id": "",
+  "chapter_ranges_searched": [],
+  "entity_ids_searched": [],
+  "alias_terms_searched": [],
+  "relation_or_event_types_searched": [],
+  "arc_ids_searched": [],
+  "evidence_ids_opened": [],
+  "indexes_used": [],
+  "excluded_scopes": [],
+  "escalation_triggers": [],
+  "needs_expanded_retrieval": false,
+  "closure_complete": false,
+  "result_semantics": "not_found_in_scope",
+  "unresolved_issue_ids": []
+}

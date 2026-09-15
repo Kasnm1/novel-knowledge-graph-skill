@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "always": ["../SKILL.md"],
+  "modes": {
+    "initialize": ["run-isolation.md", "schema.md", "TASK-SPEC.template.md"],
+    "extract_fragment": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md"],
+    "merge": ["schema.md", "run-isolation.md", "retrieval-and-efficiency.md"],
+    "audit": ["schema.md", "retrieval-and-efficiency.md"],
+    "dashboard": ["visualization.md", "dashboard-performance-and-navigation.md", "dashboard-taxonomy-and-relation-layout.md", "collection-views.md", "story-arcs.md", "overlapping-timelines-and-membership.md", "style-analysis.md"],
+    "export_context": ["ai-context.md", "retrieval-and-efficiency.md"],
+    "backfill": ["schema.md", "analysis-protocol.md", "retrieval-and-efficiency.md"],
+    "optimize_execution": ["retrieval-and-efficiency.md", "execution-profiles.json"]
+  }
+}

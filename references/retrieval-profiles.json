@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "profiles": {
+    "local_explicit": {
+      "minimum_level": "R1",
+      "requires": ["current_scene", "semantic_boundary_overlap", "direct_evidence"]
+    },
+    "temporal_state": {
+      "minimum_level": "R2",
+      "requires": ["canonical_entity", "aliases", "prior_state", "changes_through_target", "contradictions"]
+    },
+    "cross_chapter": {
+      "minimum_level": "R3",
+      "requires": ["connected_entities", "event_history", "arc_links", "distant_evidence", "unresolved_candidates"]
+    },
+    "global_aggregate": {
+      "minimum_level": "R4",
+      "requires": ["complete_claimed_range", "stratified_samples", "aggregate_counts", "counterexamples"]
+    },
+    "negative_or_universal": {
+      "minimum_level": "R4",
+      "requires": ["complete_relevant_coverage", "alias_expansion", "indexed_search", "opened_candidate_evidence", "coverage_receipt"]
+    }
+  },
+  "high_risk_dimensions": [
+    "identity",
+    "intimacy",
+    "foreshadowing_payoff",
+    "knowledge_state",
+    "first_last_only_never",
+    "correction"
+  ]
+}

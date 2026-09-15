@@ -1,0 +1,30 @@
+{
+  "snapshot_id": "fixture-performance-1",
+  "views": [
+    {
+      "view_id": "characters",
+      "category": "人物",
+      "group_by": "story_arc",
+      "sort": {"field": "last_seen_chapter", "direction": "desc"},
+      "page_size": 24,
+      "render_mode": "virtual",
+      "items": [
+        {
+          "id": "char_a",
+          "membership_ids": ["arc_alpha", "faction_red", "romance_a_b"]
+        }
+      ],
+      "next_cursor": "eyJzb3J0IjoxfQ=="
+    },
+    {
+      "view_id": "intimacy_events",
+      "category": "亲密行为",
+      "group_by": "chapter",
+      "sort": {"field": "chapter", "direction": "asc"},
+      "page_size": 24,
+      "render_mode": "virtual",
+      "items": [],
+      "next_cursor": null
+    }
+  ]
+}

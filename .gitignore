@@ -1,0 +1,25 @@
+# Python caches and local test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary and local runtime files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+
+# Generated dashboard/report output (source templates and scripts remain tracked)
+dashboard.html
+dashboard-*.html
+reports/
+outputs/
+
+# Local run metadata accidentally copied into a skill checkout
+RUN.lock
+_toolchain-*/
+_archive/
+_superseded/

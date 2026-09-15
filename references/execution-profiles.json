@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "profiles": {
+    "extract_fragment": {
+      "input_order": ["task", "invariants", "state_capsule", "candidates", "prior_state", "source_excerpts", "output_schema", "gate_summary"],
+      "output_format": "jsonl_delta",
+      "validation": "changed_scope",
+      "cacheable": true
+    },
+    "merge": {
+      "input_order": ["task", "fingerprints", "accepted_delta_ids", "affected_state", "conflicts", "gate_summary"],
+      "output_format": "deterministic_batch",
+      "validation": "affected_dependencies",
+      "cacheable": false
+    },
+    "audit": {
+      "input_order": ["named_gate", "fingerprints", "candidate_ids", "facts", "opened_evidence", "coverage_requirements"],
+      "output_format": "findings_delta",
+      "validation": "named_gate",
+      "cacheable": true
+    },
+    "dashboard": {
+      "input_order": ["view_contract", "snapshot_id", "affected_view_ids", "aggregates", "page_data"],
+      "output_format": "incremental_views",
+      "validation": "affected_views",
+      "cacheable": true
+    },
+    "export_context": {
+      "input_order": ["query", "snapshot_id", "candidate_ids", "current_state", "events", "evidence_pointers", "uncertainties"],
+      "output_format": "bounded_context_packet",
+      "validation": "query_scope",
+      "cacheable": true
+    },
+    "backfill": {
+      "input_order": ["gap_report", "fingerprints", "affected_ids", "candidate_evidence", "existing_records", "output_schema"],
+      "output_format": "jsonl_delta",
+      "validation": "affected_dependencies_plus_high_risk",
+      "cacheable": true
+    }
+  }
+}
