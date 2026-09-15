@@ -14,9 +14,10 @@ Build one evidence-backed, replayable story database per book/edition. Preserve 
 3. Use the currently installed Skill. Do not copy or freeze Skill files, references, scripts, assets, or TASK-SPEC into a run. Record the applied Skill/schema version and fingerprints in a lightweight receipt instead.
 4. A Skill update invalidates only affected caches or derived artifacts. A version mismatch is informational unless the schema change is incompatible; incompatible data requires an explicit migration in the same canonical run, not a duplicate run.
 5. Parallel workers may read the same book snapshot and write immutable task-local fragments. Hold `RUN.lock` only for the short merge/publish transaction. Recheck the base snapshot immediately before merge; rebase stale fragments instead of overwriting newer data.
-6. The canonical graph is the only story-fact source. Dashboards, summaries, indexes, collections, timelines, and AI bundles are derived outputs and never write facts back implicitly.
+6. The canonical graph is the only story-fact source. Dashboards, summaries, indexes, collections, timelines, quality reports, checkpoints, extraction packets, and AI bundles are derived outputs and never write facts back implicitly.
+7. Optimization is subordinate to accuracy. A token/runtime budget may trigger caching, deterministic indexing, task splitting, or a larger context window; it may never silently remove mandatory candidates, direct evidence, required temporal history, or lower the required retrieval level.
 
-Read `references/run-isolation.md` for the lightweight run/version/concurrency contract.
+Read `references/run-isolation.md` for the lightweight run/version/concurrency contract and `references/architecture-v2.md` for the internal module boundaries.
 
 Always resolve the run with an explicit stable `--book-id` and `--edition`. Source hashes identify snapshots, not a book; prompt wording and chapter ranges never select a run. If legacy duplicates already exist, stop writes and reconcile them instead of creating another directory.
 
@@ -39,11 +40,44 @@ Modes:
 - `dashboard`: build derived repositories and visualizations;
 - `export_context`: create a bounded context packet for another AI;
 - `backfill`: add missing records or derived products to an existing run;
-- `optimize_execution`: tune indexes, caches, batching, and token/runtime use.
+- `optimize_execution`: tune indexes, caches, batching, token/runtime use, and accuracy regression tests.
 
-Follow `references/retrieval-and-efficiency.md`. Query indexes/FACTS before opening prose, retrieve the smallest complete evidence closure, emit delta-only records, and reuse fingerprint-valid caches.
+Follow `references/retrieval-and-efficiency.md` and `references/accuracy-preserving-token-optimization.md`. Query indexes/FACTS before opening prose, retrieve the smallest complete evidence closure, emit delta-only records, and reuse fingerprint-valid caches.
 
 For dashboard taxonomy, canonical naming, readable relationship layouts, item categories, hierarchy memberships, level-axis extension, and broad intimate-route discovery, read `references/dashboard-taxonomy-and-relation-layout.md`. Keep its rules generic: examples from a specific book belong only in that book's display vocabulary or run data.
+
+## Accuracy-preserving extraction packets
+
+For ordinary bounded extraction, build the model packet deterministically rather than assembling a whole-book prompt by hand:
+
+```powershell
+python scripts/build_extraction_packet.py \
+  --graph <graph.json> \
+  --excerpts-jsonl <range.jsonl> \
+  --chapter-start <A> --chapter-end <B> \
+  --candidates <candidates.json> \
+  --output <packet.json>
+```
+
+The packet builder uses the pre-indexed `nkg.core.GraphRuntime`, entity/context closure, schema slicing, provenance-bearing state capsules and evidence pointers. Retrieval level is monotonic and may only escalate:
+
+- `R1`: current scene/range, semantic boundary overlap and direct evidence;
+- `R2`: R1 plus canonical identity/aliases, prior state, changes through the target and contradictions;
+- `R3`: R2 plus connected entities, complete relevant prior history, distant evidence and unresolved candidates;
+- `R4`: complete relevant/indexed coverage for first/last/only/never/all/none, negative/universal and whole-range claims.
+
+Identity, secrets, promises, romance/intimacy, foreshadowing/payoff and similar cross-chapter semantics require at least R3. Global or negative claims require R4. If the complete required packet exceeds a configured budget, set the budget diagnostic and split the task; do not truncate required context. If evidence remains insufficient, emit `unresolved`, never a guess.
+
+Before accepting a change to retrieval, chunking, state-capsule depth, schema slicing or prompt composition, run an accuracy A/B gate:
+
+```powershell
+python scripts/accuracy_regression_gate.py \
+  --baseline <baseline-result.json> \
+  --optimized <optimized-result.json> \
+  --report <accuracy-report.json>
+```
+
+Confirmed record recall, high-risk/mandatory candidate recall and evidence linkage must not regress. Semantic gold fixtures should additionally cover identity, temporal state, item transfer, romance/intimacy, mortality, commitments, foreshadowing/payoff and negative/universal claims.
 
 ## Extraction contract
 
@@ -56,7 +90,7 @@ Before extracting or changing graph data, read `references/schema.md` and `refer
 - Record absence only within a proven search scope. Otherwise use `not_found_in_scope` or an unresolved issue.
 - A no-change fragment is valid after the assigned source range and required candidates were checked; emit a compact no-change result and coverage receipt.
 
-Use the escalation rules in `references/retrieval-and-efficiency.md`. Identity, temporal state, romance/intimacy, foreshadowing payoff, corrections, whole-range style, and first/last/only/never claims require expanded retrieval. If the required evidence closure remains incomplete, keep the claim unresolved.
+Use the escalation rules above and in `references/retrieval-and-efficiency.md`. Identity, temporal state, romance/intimacy, foreshadowing payoff, corrections, whole-range style, and first/last/only/never claims require expanded retrieval. If the required evidence closure remains incomplete, keep the claim unresolved.
 
 ## Romance and intimacy completeness
 
@@ -96,18 +130,18 @@ The expansion follows one strict rule: **`commitments[]` is the only new top-lev
 
 For legacy runs, first derive what is already recoverable, then scan bounded candidates, then reread only the evidence closure around unresolved candidates. Every candidate must be confirmed, excluded, or left explicitly unresolved.
 
-Use the expansion-aware publish entry points when the new contract is in scope:
+The canonical merge engine is now `merge_graph.py`; `merge_graph_expanded.py` remains a compatibility alias for older callers. Use:
 
 ```powershell
 python scripts/check_fragment_expanded.py --fragment <fragment.json> --graph <graph.json>
-python scripts/merge_graph_expanded.py --input <fragments...> --output <graph.json>
+python scripts/merge_graph.py --input <fragments...> --output <graph.json>
 python scripts/validate_full_graph.py --graph <graph.json>
 python scripts/build_expansion_artifacts.py --graph <graph.json> --output-dir <derived-dir>
 ```
 
-`validate_full_graph.py` keeps historical structural validation separate from expansion validation/coverage. A zero denominator is reported as “not evaluated”, never as a completeness pass.
+`validate_full_graph.py` deliberately composes three layers: historical/base structural validation, expansion contract/coverage validation, and semantic story-world invariants. Keep these reports separate. A zero denominator is “not evaluated”, never a completeness pass. Semantic warnings identify review targets; only hard invariant errors automatically invalidate publication.
 
-The expanded dashboard is chapter-synchronized and may include protagonist achievements, combat records, resources, world topology/territory replay, skills, relation gaps/co-occurrence, commitments/favors, knowledge propagation, foreshadowing/payoff, levels, chapter rhythm, romance milestones, mortality/inheritance, economy, rules, narrative voice and coverage audits. All are derived and disposable.
+The unified dashboard is chapter-synchronized and may include protagonist achievements, combat records, resources, world topology/territory replay, skills, relation gaps/co-occurrence, commitments/favors, knowledge propagation, foreshadowing/payoff, levels, chapter rhythm, romance milestones, mortality/inheritance, economy, rules, narrative voice and coverage/quality audits. All are derived and disposable.
 
 For external sharing, use an as-of build before view construction, not post-render hiding:
 
@@ -116,6 +150,14 @@ python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-json
 ```
 
 This filters future entities, aliases with known timing, evidence, events, relations, milestones and payoffs before counters/search/tooltips are built.
+
+For long books or repeated historical navigation, optionally prebuild strict checkpoints:
+
+```powershell
+python scripts/build_snapshot_checkpoints.py --graph <graph.json> --output-dir <checkpoints> --interval 50
+```
+
+A checkpoint is a fingerprinted derived snapshot and never replaces the canonical graph.
 
 ## Merge and concurrency
 
@@ -141,12 +183,13 @@ Required checks for affected work:
 
 - schema, stable IDs, references, source coordinates, and evidence resolution;
 - temporal predecessor/interval consistency for affected entities;
+- semantic invariants such as impossible intervals, suspicious state-chain discontinuities, post-death activity before a recorded revival, and overlapping exclusive control;
 - source-side candidate resolution for romance and intimacy;
 - route coverage against direct acts/proposals and relevant relationship types;
 - coverage receipt compatibility with the claim scope;
 - contradiction preservation and no silent shortening/overwriting of stronger records.
 
-`audit_context_coverage.py` checks receipt semantics. Candidate and source/index parity checks remain separate gates. Do not suppress a completeness-gate failure with `|| true`; optional diagnostic reports may remain non-blocking only when clearly labelled advisory and excluded from completion status.
+`audit_context_coverage.py` checks receipt semantics. `audit_graph_invariants.py` checks deterministic story-world invariants. Candidate and source/index parity checks remain separate gates. Do not suppress a completeness-gate failure with `|| true`; optional diagnostic reports may remain non-blocking only when clearly labelled advisory and excluded from completion status.
 
 ## Dashboard and AI exports
 
@@ -156,6 +199,8 @@ Build the Dashboard and AI exports only from the validated canonical graph.
 - Apply the collection and overlap references for multi-membership and intersecting story arcs. Primary membership/arc is a display hint, never an exclusive fact.
 - Keep reader-facing labels localized through a book-specific display vocabulary; do not expose internal ontology keys unnecessarily.
 - Export bounded AI context by query, entity IDs, arc, and chapter range. Include current state, relevant history, evidence pointers, uncertainties, snapshot/version identity, and coverage limits—not the entire graph by default.
+- Use `build_quality_report.py` for deterministic evidence/provenance/unresolved/invariant metrics. These are audit indicators, never truth probabilities.
+- Use `build_snapshot_diff.py` when comparing two chapter snapshots instead of manually diffing final-state prose.
 
 ## Delivery
 
@@ -163,9 +208,10 @@ Report:
 
 - canonical run and analyzed chapter coverage;
 - record counts and unresolved candidate counts;
-- validation/completeness results separately;
+- structural validity, expansion completeness and semantic-invariant results separately;
 - applied Skill/schema version receipt;
-- cache or migration actions;
+- cache/checkpoint or migration actions;
+- token telemetry when execution optimization is being measured;
 - known limitations and manual acceptance still required.
 
 Never claim completeness from `valid: true` alone. Never claim unprocessed chapters, inferred future payoffs, or unresolved source candidates as facts.
