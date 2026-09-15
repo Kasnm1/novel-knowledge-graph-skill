@@ -2,10 +2,9 @@
 """Build the canonical unified, chapter-synchronized dashboard.
 
 One slider creates one client-side snapshot object. Legacy graph/repository/arcs/
-collections and all expansion panels read only that object. Entity names, prose
-and attributes are projected as-of the selected chapter; untimed legacy fields
-are hidden on historical chapters and appear only at the terminal full-book
-snapshot, preventing a late whole-book summary from leaking into chapter 5.
+collections and all expansion panels read only that object. Entity names, prose,
+attributes, relation status and derived panels are projected as-of the selected
+chapter. A strict ``--cutoff`` closes the embedded payload before rendering.
 """
 from __future__ import annotations
 
@@ -18,6 +17,7 @@ from typing import Any
 
 from derive_novel_views import build_views
 from filter_graph_asof import filter_graph
+from io_utils import atomic_write_text
 
 
 def build_model(graph: dict[str, Any], protagonists=(), gap_threshold: int = 3, collections: dict[str, Any] | None = None, cutoff: int | None = None) -> dict[str, Any]:
@@ -28,8 +28,11 @@ def build_model(graph: dict[str, Any], protagonists=(), gap_threshold: int = 3, 
         "views": build_views(scoped, protagonists, max(1, gap_threshold)),
         "collections": collections or {"collections": []},
         "metadata": {
-            "title": meta.get("title"), "chapter_start": meta.get("chapter_start"), "chapter_end": meta.get("chapter_end"),
-            "cutoff": cutoff, "temporal_provenance_gaps": meta.get("temporal_provenance_gaps", []),
+            "title": meta.get("title"),
+            "chapter_start": meta.get("chapter_start"),
+            "chapter_end": meta.get("chapter_end"),
+            "cutoff": cutoff,
+            "temporal_provenance_gaps": meta.get("temporal_provenance_gaps", []),
         },
     }
 
@@ -54,21 +57,22 @@ function proseAt(e,field,c){const h=histValue(e[`${field}_history`],c,[field,'va
 function attrsAt(e,c){const out={};for(const r of [...A(e.attribute_history),...A(e.attributes_history)].sort((a,b)=>(N(a.chapter)??N(a.valid_from)??0)-(N(b.chapter)??N(b.valid_from)??0))){const at=N(r.chapter)??N(r.valid_from);if(at!==null&&at<=c){const k=r.key??r.attribute;if(typeof k==='string')out[k]=structuredClone(r.value)}}for(const [k,v] of Object.entries(e.attributes||{})){if(Object.hasOwn(out,k))continue;const first=nestedChapter(META.attribute_first_chapter,e.id,k);if((first!==null&&first<=c)||(first===null&&c>=max))out[k]=structuredClone(v)}return out}
 function entityAt(e,c){const x={...e,name:nameAt(e,c),attributes:attrsAt(e,c)};const summary=proseAt(e,'summary',c),description=proseAt(e,'description',c);if(summary===undefined)delete x.summary;else x.summary=summary;if(description===undefined)delete x.description;else x.description=description;delete x.current_state;return x}
 function safeName(id,names){return names[id]??id??''}function rewriteNames(text,names){let s=String(text??'');for(const e of A(G.entities)){if(typeof e.name==='string'&&e.name&&names[e.id]&&names[e.id]!==e.name)s=s.split(e.name).join(names[e.id])}return s}
-function commitAt(x,c){x=structuredClone(x);x.observations=A(x.observations).filter(o=>(N(o.chapter)??0)<=c);if(N(x.resolved_chapter)!==null&&x.resolved_chapter>c){x.resolved_chapter=null;x.resolution=null}const s=[...x.observations].reverse().find(o=>o.status)?.status;if(s)x.status=s;else if(!x.resolved_chapter)x.status='active';return x}
+function commitAt(x,c){x=structuredClone(x);x.observations=A(x.observations).filter(o=>(N(o.chapter)??0)<=c).sort((a,b)=>(N(a.chapter)??0)-(N(b.chapter)??0));if(N(x.resolved_chapter)!==null&&x.resolved_chapter>c){x.resolved_chapter=null;x.resolution=null}const s=[...x.observations].reverse().find(o=>typeof o.status==='string')?.status;if(s)x.status=s;else if(!x.resolved_chapter)x.status='active';return x}
+function relationAt(x,c){x=structuredClone(x);const end=N(x.valid_to);x.observations=A(x.observations).filter(o=>(N(o.chapter)??0)<=c).sort((a,b)=>(N(a.chapter)??0)-(N(b.chapter)??0));if(end!==null&&end>c)delete x.valid_to;const s=[...x.observations].reverse().find(o=>typeof o.status==='string')?.status;if(s)x.status=s;else if(end!==null&&end>c&&!['active','uncertain',null].includes(x.status))x.status='active';return x}
 function resourceAt(x,c,names){x=structuredClone(x);x.name=safeName(x.item_id,names)||x.name;x.role_history=A(x.role_history).filter(r=>(N(r.chapter)??0)<=c&&interval(r,c,'chapter','valid_to')).map(r=>({...r,entity:safeName(r.entity_id,names),location:safeName(r.location_id,names)}));x.quantity_history=A(x.quantity_history).filter(r=>(N(r.chapter)??0)<=c);x.current_quantities={};for(const r of x.quantity_history)if(r.entity_id)x.current_quantities[r.entity_id]=r.after;x.acquisition_count=x.role_history.filter(r=>r.action==='gained').length;return x}
 function expr(q,s,stack=[]){const all=new Set(s.graph.entities.map(e=>e.id));if(!q||typeof q!=='object')return new Set();if(q.explicit_members)return new Set(A(q.explicit_members).filter(x=>all.has(x)));if(q.type)return new Set(s.graph.entities.filter(e=>e.type===q.type).map(e=>e.id));if(q.arc){const a=s.arcs.find(x=>x.id===q.arc);return new Set(A(a?.entity_ids).filter(x=>all.has(x)))}if(q.collection){if(stack.includes(q.collection))return new Set();const c=A(C.collections).find(x=>x.id===q.collection);return c?expr(c.expression,s,[...stack,q.collection]):new Set()}if(q.and){const ss=A(q.and).map(x=>expr(x,s,stack));return ss.length?new Set([...ss[0]].filter(x=>ss.slice(1).every(z=>z.has(x)))):new Set()}if(q.or){const o=new Set();for(const z of A(q.or).map(x=>expr(x,s,stack)))for(const x of z)o.add(x);return o}if(q.not){const bad=expr(q.not,s,stack);return new Set([...all].filter(x=>!bad.has(x)))}if(q.relation){const spec=typeof q.relation==='string'?{type:q.relation}:q.relation,o=new Set();for(const r of s.graph.relations){if((spec.type||spec.relation_type)&&r.relation_type!==(spec.type||spec.relation_type))continue;o.add(r.source_id);o.add(r.target_id)}return new Set([...o].filter(x=>all.has(x)))}return new Set()}
 function snapshotAt(c){
  const entities=A(G.entities).filter(e=>(N(e.first_chapter)??0)<=c).map(e=>entityAt(e,c)),ids=new Set(entities.map(e=>e.id)),names=Object.fromEntries(entities.map(e=>[e.id,e.name]));
- const relations=A(G.relations).filter(r=>(N(r.valid_from)??0)<=c&&ids.has(r.source_id)&&ids.has(r.target_id)&&interval(r,c)),events=A(G.events).filter(e=>(N(e.chapter)??0)<=c),arcs=A(G.story_arcs).filter(a=>(N(a.chapter_start)??0)<=c).map(a=>N(a.chapter_end)!==null&&a.chapter_end>c?{...a,chapter_end:null,status:['closed','complete','completed','resolved'].includes(a.status)?'active':a.status}:a);
+ const relations=A(G.relations).filter(r=>(N(r.valid_from)??0)<=c&&ids.has(r.source_id)&&ids.has(r.target_id)&&interval(r,c)).map(r=>relationAt(r,c)),relationById=Object.fromEntries(relations.map(r=>[r.id,r])),events=A(G.events).filter(e=>(N(e.chapter)??0)<=c),arcs=A(G.story_arcs).filter(a=>(N(a.chapter_start)??0)<=c).map(a=>N(a.chapter_end)!==null&&a.chapter_end>c?{...a,chapter_end:null,status:['closed','complete','completed','resolved'].includes(a.status)?'active':a.status}:a);
  const v={...V};
  v.achievements=A(V.achievements).filter(x=>(N(x.chapter)??0)<=c).map(x=>({...x,title:rewriteNames(x.title,names)}));
  v.combat_records=A(V.combat_records).filter(x=>(N(x.chapter)??0)<=c).map(x=>({...x,protagonist:safeName(x.protagonist_id,names),opponents:A(x.opponent_ids).map(id=>safeName(id,names)),location:safeName(x.location_id,names)}));
  v.resources={items:A(V.resources?.items).map(x=>resourceAt(x,c,names)).filter(x=>x.role_history.length||x.quantity_history.length||x.rarity||x.supply)};
  v.skills=A(V.skills).map(x=>({...x,name:safeName(x.skill_id,names)||x.name,holders:A(x.holders).filter(h=>interval(h,c)).map(h=>({...h,entity:safeName(h.entity_id,names)}))}));
  v.commitments=A(V.commitments).filter(x=>(N(x.created_chapter)??0)<=c).map(x=>{const q=commitAt(x,c);q.promisors=A(q.promisor_ids).map(id=>safeName(id,names));q.counterparties=A(q.counterparty_ids).map(id=>safeName(id,names));return q});
- v.favor_ledger=A(V.favor_ledger).filter(x=>(N(x.valid_from)??0)<=c).map(x=>({...x,debtor:safeName(x.debtor_id,names),creditor:safeName(x.creditor_id,names)}));
+ v.favor_ledger=A(V.favor_ledger).filter(x=>(N(x.valid_from)??0)<=c).map(x=>{const r=relationById[x.relation_id];return {...x,debtor:safeName(x.debtor_id,names),creditor:safeName(x.creditor_id,names),status:r?.status??x.status,valid_to:r?.valid_to}});
  v.knowledge={secrets:A(V.knowledge?.secrets).map(s=>({...s,secret:safeName(s.secret_id,names),people:A(s.people).map(p=>({...p,entity:safeName(p.entity_id,names),history:A(p.history).filter(h=>(N(h.chapter)??0)<=c)})).filter(p=>p.history.length)})).filter(s=>s.people.length),propagation:A(V.knowledge?.propagation).filter(x=>(N(x.chapter)??0)<=c).map(x=>({...x,secret:safeName(x.secret_id,names),from:safeName(x.from_id,names),to:safeName(x.to_id,names)}))};
- v.foreshadowing={rows:A(V.foreshadowing?.rows).filter(x=>(N(x.planted_chapter)??0)<=c).map(x=>N(x.payoff_chapter)!==null&&x.payoff_chapter>c?{...x,payoff_chapter:null,span:null,status:'active'}:x)};v.foreshadowing.unresolved=v.foreshadowing.rows.filter(x=>N(x.payoff_chapter)===null);
+ v.foreshadowing={rows:A(V.foreshadowing?.rows).filter(x=>(N(x.planted_chapter)??0)<=c).map(x=>N(x.payoff_chapter)!==null&&x.payoff_chapter>c?{...x,payoff_chapter:null,span:null,status:'open'}:x)};v.foreshadowing.unresolved=v.foreshadowing.rows.filter(x=>N(x.payoff_chapter)===null);
  v.levels={series:A(V.levels?.series).map(s=>({...s,entity:safeName(s.entity_id,names),facets:Object.fromEntries(Object.entries(s.facets||{}).map(([k,z])=>[k,A(z).filter(x=>(N(x.chapter)??0)<=c)]))})).filter(s=>Object.values(s.facets).some(z=>z.length))};
  v.chapter_rhythm={chapters:A(V.chapter_rhythm?.chapters).filter(x=>(N(x.chapter)??0)<=c).map(x=>({...x,pov:A(x.pov_entity_ids).map(id=>safeName(id,names))}))};
  v.romance={routes:A(V.romance?.routes).map(r=>({...r,character:safeName(r.character_id,names),milestones:A(r.milestones).filter(m=>(N(m.chapter)??0)<=c)})).filter(r=>r.milestones.length)};
@@ -106,8 +110,26 @@ function refresh(){const c=Number(sl.value);document.getElementById('cl').textCo
 
 
 def main() -> int:
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument("--graph",required=True,type=Path);p.add_argument("--output-dir",required=True,type=Path);p.add_argument("--collection-manifest",type=Path);p.add_argument("--cutoff",type=int);p.add_argument("--protagonist-id",action="append",default=[]);p.add_argument("--relation-gap-threshold",type=int,default=3);a=p.parse_args()
-    graph=json.loads(a.graph.read_text(encoding="utf-8"));collections=json.loads(a.collection_manifest.read_text(encoding="utf-8")) if a.collection_manifest else None;model=build_model(graph,a.protagonist_id,a.relation_gap_threshold,collections,a.cutoff);a.output_dir.mkdir(parents=True,exist_ok=True);out=a.output_dir/"dashboard.html";out.write_text(build_html(model),encoding="utf-8");asset=Path(__file__).resolve().parent.parent/"assets"/"cytoscape-3.34.3.min.js";shutil.copy2(asset,a.output_dir/asset.name) if asset.exists() else None;print(json.dumps({"dashboard":str(out),"cutoff":a.cutoff,"unified":True},ensure_ascii=False));return 0
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--graph", required=True, type=Path)
+    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--collection-manifest", type=Path)
+    parser.add_argument("--cutoff", type=int)
+    parser.add_argument("--protagonist-id", action="append", default=[])
+    parser.add_argument("--relation-gap-threshold", type=int, default=3)
+    args = parser.parse_args()
+    graph = json.loads(args.graph.read_text(encoding="utf-8"))
+    collections = json.loads(args.collection_manifest.read_text(encoding="utf-8")) if args.collection_manifest else None
+    model = build_model(graph, args.protagonist_id, args.relation_gap_threshold, collections, args.cutoff)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    out = args.output_dir / "dashboard.html"
+    atomic_write_text(out, build_html(model))
+    asset = Path(__file__).resolve().parent.parent / "assets" / "cytoscape-3.34.3.min.js"
+    if asset.exists():
+        shutil.copy2(asset, args.output_dir / asset.name)
+    print(json.dumps({"dashboard": str(out), "cutoff": args.cutoff, "unified": True}, ensure_ascii=False))
+    return 0
 
 
-if __name__=="__main__":raise SystemExit(main())
+if __name__ == "__main__":
+    raise SystemExit(main())
