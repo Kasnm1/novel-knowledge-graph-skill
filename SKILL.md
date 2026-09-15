@@ -14,8 +14,9 @@ Build one evidence-backed, replayable story database per book/edition. Preserve 
 3. Use the currently installed Skill. Do not copy or freeze Skill files, references, scripts, assets, or TASK-SPEC into a run. Record the applied Skill/schema version and fingerprints in a lightweight receipt instead.
 4. A Skill update invalidates only affected caches or derived artifacts. A version mismatch is informational unless the schema change is incompatible; incompatible data requires an explicit migration in the same canonical run, not a duplicate run.
 5. Parallel workers may read the same book snapshot and write immutable task-local fragments. Hold `RUN.lock` only for the short merge/publish transaction. Recheck the base snapshot immediately before merge; rebase stale fragments instead of overwriting newer data.
-6. The canonical graph is the only story-fact source. Dashboards, summaries, indexes, collections, timelines, quality reports, checkpoints, extraction packets, and AI bundles are derived outputs and never write facts back implicitly.
+6. The canonical graph is the only story-fact source. Dashboards, summaries, indexes, collections, timelines, quality reports, checkpoints, extraction packets, display profiles, and AI bundles are derived outputs and never write facts back implicitly.
 7. Optimization is subordinate to accuracy. A token/runtime budget may trigger caching, deterministic indexing, task splitting, or a larger context window; it may never silently remove mandatory candidates, direct evidence, required temporal history, or lower the required retrieval level.
+8. Use deterministic code for structural truth boundaries and AI for semantic judgment. Code should enforce IDs, references, time, provenance, evidence, cache integrity, and spoiler closure; it should not hard-code book-specific ideas of what is “important”, how an entity should be summarized, or which attributes deserve visual emphasis when an AI can judge those from the actual work. AI-authored interpretation remains derived and evidence-bounded, never a replacement canonical fact source.
 
 Read `references/run-isolation.md` for the lightweight run/version/concurrency contract and `references/architecture-v2.md` for the internal module boundaries.
 
@@ -44,7 +45,7 @@ Modes:
 
 Follow `references/retrieval-and-efficiency.md` and `references/accuracy-preserving-token-optimization.md`. Query indexes/FACTS before opening prose, retrieve the smallest complete evidence closure, emit delta-only records, and reuse fingerprint-valid caches.
 
-For dashboard taxonomy, canonical naming, readable relationship layouts, item categories, hierarchy memberships, level-axis extension, and broad intimate-route discovery, read `references/dashboard-taxonomy-and-relation-layout.md`. Keep its rules generic: examples from a specific book belong only in that book's display vocabulary or run data.
+For dashboard taxonomy, canonical naming, readable relationship layouts, item categories, hierarchy memberships, level-axis extension, and broad intimate-route discovery, read `references/dashboard-taxonomy-and-relation-layout.md`. For entity importance and presentation wording, read `references/display-intelligence-contract.md`; semantic display choices may be free-form but must remain time/evidence bounded. Keep examples from a specific book only in that book's display hints or run data.
 
 ## Accuracy-preserving extraction packets
 
@@ -126,7 +127,7 @@ The expansion follows one strict rule: **`commitments[]` is the only new top-lev
 - Repeated resources use item entities, `item_roles`, targeted quantity state changes, and `cause_event_id -> event.location_id` for acquisition provenance.
 - Favors use `owes_favor_to`; secrets remain `concept` entities plus `knowledge` changes; material promises/oaths/wagers use `commitments[]`.
 - Side-character co-occurrence generates relationship candidates only. It never proves friendship, hostility, kinship or membership.
-- `chapter_summaries` may carry source-faithful `story_time`, `pov_entity_ids`, `scene_count` and controlled `cliffhanger_type`.
+- `chapter_summaries` may carry source-faithful `story_time`, `story_time_sort_key`, `story_time_label`, `pov_entity_ids`, `scene_count` and controlled `cliffhanger_type`. Keep narrative chapter and story time as separate axes; deterministic code must not guess flashback/flashforward semantics from free-form prose.
 
 For legacy runs, first derive what is already recoverable, then scan bounded candidates, then reread only the evidence closure around unresolved candidates. Every candidate must be confirmed, excluded, or left explicitly unresolved.
 
@@ -196,11 +197,15 @@ Required checks for affected work:
 Build the Dashboard and AI exports only from the validated canonical graph.
 
 - Apply `references/dashboard-performance-and-navigation.md` for categories, filters, stable pagination/cursors, virtualization, lazy details, and bounded rendering.
+- Apply `references/display-intelligence-contract.md` for entity details. On entity open, make **首次出现** and **重要属性** visually prominent. Prefer an AI-authored derived display profile for important attribute selection/headlines; if none exists, use a neutral current-visible-attribute fallback rather than a type-specific hard-coded priority list.
+- AI display profiles may use free-form labels and wording. Code validates entity IDs, source keys, evidence and visibility intervals only. Never copy a display headline/value back into the canonical graph merely because it is convenient for the UI.
 - Apply the collection and overlap references for multi-membership and intersecting story arcs. Primary membership/arc is a display hint, never an exclusive fact.
 - Keep reader-facing labels localized through a book-specific display vocabulary; do not expose internal ontology keys unnecessarily.
 - Export bounded AI context by query, entity IDs, arc, and chapter range. Include current state, relevant history, evidence pointers, uncertainties, snapshot/version identity, and coverage limits—not the entire graph by default.
 - Use `build_quality_report.py` for deterministic evidence/provenance/unresolved/invariant metrics. These are audit indicators, never truth probabilities.
-- Use `build_snapshot_diff.py` when comparing two chapter snapshots instead of manually diffing final-state prose.
+- Use `build_snapshot_diff.py` when comparing two chapter snapshots instead of manually diffing final-state prose. The unified Dashboard may expose this through the shared slider without creating a second state model.
+- Use `build_story_time_view.py` when narrative order and in-world time must be compared. Preserve source/AI-supplied story-time structure; do not force free-form time descriptions into a brittle deterministic ontology.
+- Reader evidence links should support direct chapter/evidence deep links so every visible conclusion can be inspected at its source.
 
 ## Delivery
 
