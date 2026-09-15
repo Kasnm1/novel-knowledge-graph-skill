@@ -29,6 +29,10 @@ jobs:
           chromedriver --version
       - name: Compile Python
         run: python -m compileall -q scripts
+      - name: Audit code health
+        env:
+          PYTHONPATH: scripts
+        run: python scripts/audit_code_health.py --root scripts --strict --json code-health.json
       - name: Run repository and final-delivery tests
         env:
           PYTHONPATH: scripts
