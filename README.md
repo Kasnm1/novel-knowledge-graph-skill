@@ -13,30 +13,66 @@ Evidence-backed tooling for turning novels and serialized fiction into replayabl
 - Foreshadowing/payoff tracking, style observations, chapter pacing and bounded AI exports.
 - Deterministic merge, validation, snapshot, audit and dashboard-generation scripts.
 - Growth/world expansion: protagonist achievements, battle records with as-of realms, resources, fictional-world topology, territory replay, side-character relation coverage, commitments, secret/knowledge views, mortality, economy and narrative rhythm.
-- Reader-mode spoiler cutoff, evidence-linked source reader, safe run garbage collection, true-coverage run index, and cross-book trope comparison.
+- Strict reader-mode spoiler closure, evidence-linked source reader, transactional run garbage collection, true-coverage run index, and cross-book trope comparison.
 
-## Growth / world expansion
+## Canonical temporal model
 
-The expansion keeps `graph.json` as the only story-fact source. It adds exactly one optional top-level fact family, `commitments[]`; achievements, combat tables, inventories, death lists, knowledge matrices and map layouts are derived.
+`graph.json` remains the only story-fact source. The expansion adds exactly one optional top-level fact family, `commitments[]`; achievements, combat tables, inventories, death lists, knowledge matrices and map layouts are derived.
 
-For legacy runs, use the compatibility-aware entry points:
-
-```powershell
-python scripts/check_fragment_expanded.py --fragment <fragment.json> --graph <graph.json>
-python scripts/merge_graph_expanded.py --input <fragments...> --output <graph.json>
-python scripts/validate_full_graph.py --graph <graph.json>
-python scripts/build_expansion_artifacts.py --graph <graph.json> --output-dir <derived-dir>
-```
-
-Optional reader-safe delivery:
+For any historical chapter, use one authoritative snapshot:
 
 ```powershell
-python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> --cutoff 300 --output-dir <share-dir>
+python scripts/derive_asof_views.py --graph <graph.json> --chapter 300 --output <snapshot-300.json>
 ```
 
-The extended dashboard includes one chapter slider shared by achievements, battle records, resources, world/territory, skill categories, side-character relations/co-occurrence, commitments/favors, secret propagation, foreshadowing/payoff, level progression, chapter rhythm, romance milestones, mortality/inheritance, economy and rules.
+The snapshot closes future names/aliases, summaries/attributes, current state, evidence, events, relations, commitments, romance milestones, foreshadowing payoff and timed style observations before derived views are built. Untimed legacy prose is treated as a temporal-provenance gap instead of silently leaking into a spoiler-safe share artifact.
 
-See `references/expansion-schema.md` and `references/expansion-workflows.md`.
+## One unified Dashboard
+
+New builds no longer split the old graph/repository/story-arc/collection UI from the growth/world panels. `build_unified_dashboard.py` produces one Dashboard with one chapter slider and one shared snapshot state for:
+
+- relationship graph and entity repository;
+- story arcs and saved collections;
+- achievements, battle records, resources and skill categories;
+- world/territory, side-character relations/co-occurrence;
+- commitments/favors, secrets/knowledge propagation;
+- foreshadowing/payoff, level progression, chapter rhythm;
+- romance milestones, mortality/inheritance, economy, rules and narrative voice.
+
+`build_expansion_dashboard.py` remains only for backward compatibility.
+
+## Final one-command build
+
+```powershell
+python scripts/build_expansion_artifacts.py \
+  --graph <graph.json> \
+  --chapters-jsonl <chapters.jsonl> \
+  --collection-manifest <dashboard-views.json> \
+  --output-dir <derived-dir>
+```
+
+Spoiler-safe share build:
+
+```powershell
+python scripts/build_expansion_artifacts.py \
+  --graph <graph.json> \
+  --chapters-jsonl <chapters.jsonl> \
+  --collection-manifest <dashboard-views.json> \
+  --cutoff 300 \
+  --output-dir <share-dir>
+```
+
+The build is fail-closed. Validation, spoiler closure, derived views, Dashboard, candidate scan and reader are checked individually. Any required step or artifact failure makes the command fail. `artifact-manifest.json` records subprocess return codes and SHA-256 fingerprints of required outputs.
+
+## Auditable backfill
+
+Legacy candidate scanning reports the requested and actually readable chapter ranges, missing/unreadable source text, malformed index rows, per-kind total/emitted/truncated matches, cutoff and review progress (`unresolved / confirmed / excluded`). Incomplete requested source coverage returns nonzero rather than being reported as a completed scan.
+
+## Safe GC
+
+`gc_run.py` is dry-run by default. `--apply` writes an operation manifest before moving anything, deduplicates parent/child candidates and rolls back partial failures. Applied archives can be restored. Permanent `--purge` requires a valid manifest and matching fingerprints.
+
+See `scripts/EXPANSION_COMMANDS.md`, `references/expansion-schema.md`, and `references/expansion-workflows.md`.
 
 ## Install
 
@@ -62,7 +98,7 @@ From this directory:
 python -m unittest discover -s scripts -p "test_*.py"
 ```
 
-The test suite checks the deterministic contracts used by merge, validation, views, exports and dashboard readability. If your Codex installation includes the `skill-creator` utility, also run its `quick_validate.py` against this directory to check Skill structure and frontmatter.
+CI additionally installs real Chrome/Selenium and runs non-monotonic slider tests, cross-panel chapter consistency, spoiler-marker leakage checks, overlapping-evidence highlighting, GC apply/rollback/restore/purge checks, and a 1200-chapter / 450-character performance fixture.
 
 ## Scope and data hygiene
 
