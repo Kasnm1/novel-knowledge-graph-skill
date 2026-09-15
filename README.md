@@ -14,11 +14,12 @@ Evidence-backed tooling for turning novels and serialized fiction into replayabl
 - Deterministic merge, validation, snapshot, audit and dashboard-generation scripts.
 - Growth/world expansion: protagonist achievements, battle records with as-of realms, resources, fictional-world topology, territory replay, side-character relation coverage, commitments, secret/knowledge views, mortality, economy and narrative rhythm.
 - Strict reader-mode spoiler closure, evidence-linked source reader, transactional run garbage collection, true-coverage run index, and cross-book trope comparison.
-- Modular `scripts/nkg/` runtime with pre-indexed graph access, accuracy-preserving extraction packets, semantic story invariants, data-quality views, snapshot diffs and long-run checkpoints.
+- Modular `scripts/nkg/` runtime with pre-indexed graph access, accuracy-preserving extraction packets, semantic story invariants, data-quality views, snapshot diffs, dual story/narrative time and long-run checkpoints.
+- AI-driven derived display profiles: code guards IDs/time/evidence, while AI decides which currently visible attributes are actually important for the work.
 
 ## Canonical temporal model
 
-`graph.json` remains the only story-fact source. The expansion adds exactly one optional top-level fact family, `commitments[]`; achievements, combat tables, inventories, death lists, knowledge matrices, quality metrics and map layouts are derived.
+`graph.json` remains the only story-fact source. The expansion adds exactly one optional top-level fact family, `commitments[]`; achievements, combat tables, inventories, death lists, knowledge matrices, display profiles, quality metrics and map layouts are derived.
 
 For any historical chapter, use one authoritative snapshot:
 
@@ -63,18 +64,30 @@ New builds no longer split the old graph/repository/story-arc/collection UI from
 - world/territory, side-character relations/co-occurrence;
 - commitments/favors, secrets/knowledge propagation;
 - foreshadowing/payoff, level progression, chapter rhythm;
-- romance milestones, mortality/inheritance, economy, rules and narrative voice.
+- romance milestones, mortality/inheritance, economy, rules and narrative voice;
+- snapshot A/B changes and deterministic quality/provenance audit metrics.
 
-`build_expansion_dashboard.py` remains only for backward compatibility.
+Entity detail is intentionally reader-first. Clicking an entity opens a prominent drawer where **首次出现** and **重要属性** appear before lower-level data. If an AI-authored display profile is supplied, the AI chooses which visible source attributes and headline matter for that specific book. Code does not use a fixed `character -> realm/faction/...` or `item -> rarity/holder/...` importance map. Without AI hints, the UI falls back to currently visible attributes only.
+
+AI display hints remain derived and time/evidence bounded:
+
+```powershell
+python scripts/build_entity_profiles.py --graph <graph.json> --hints <display-hints.json> --output <entity-profiles.json>
+```
+
+The final build accepts the same hints with `--display-hints`. Evidence links in the entity drawer open `reader.html?chapter=N&evidence=ID` and focus the supporting quotation.
 
 For audit-oriented data views:
 
 ```powershell
 python scripts/build_quality_report.py --graph <graph.json> --output <quality.json>
 python scripts/build_snapshot_diff.py --graph <graph.json> --from-chapter 300 --to-chapter 400 --output <diff.json>
+python scripts/build_story_time_view.py --graph <graph.json> --output <story-time.json>
 ```
 
-Quality indicators report provenance/completeness risk; they are not probabilities that a story fact is true.
+Quality indicators report provenance/completeness risk; they are not probabilities that a story fact is true. Story-time views keep narrative chapter and in-world time separate and do not deterministically guess flashback/flashforward semantics from free-form prose.
+
+`build_expansion_dashboard.py` remains only for backward compatibility.
 
 ## Final one-command build
 
@@ -83,9 +96,12 @@ python scripts/build_expansion_artifacts.py \
   --graph <graph.json> \
   --chapters-jsonl <chapters.jsonl> \
   --collection-manifest <dashboard-views.json> \
+  --display-hints <display-hints.json> \
   --checkpoint-interval 50 \
   --output-dir <derived-dir>
 ```
+
+`--display-hints` is optional. Omitting it never prevents a build; it only causes the entity detail layer to use a neutral visible-attribute fallback.
 
 Spoiler-safe share build:
 
@@ -98,7 +114,7 @@ python scripts/build_expansion_artifacts.py \
   --output-dir <share-dir>
 ```
 
-The build is fail-closed. Structural validation, expansion validation, semantic invariants, spoiler closure, derived views, quality audit, Dashboard, candidate scan and reader are checked individually. Any required step or artifact failure makes the command fail. `artifact-manifest.json` records subprocess return codes, timings and SHA-256 fingerprints of required outputs. Optional checkpoints prebuild strict snapshots for repeated long-book navigation.
+The build is fail-closed. Structural validation, expansion validation, semantic invariants, spoiler closure, derived views, dual story-time view, quality audit, provenance index, entity display profiles, Dashboard, candidate scan and reader are checked individually. Any required step or artifact failure makes the command fail. `artifact-manifest.json` records subprocess return codes, timings and SHA-256 fingerprints of required outputs. Optional checkpoints prebuild strict snapshots for repeated long-book navigation.
 
 ## Auditable backfill
 
@@ -108,7 +124,7 @@ Legacy candidate scanning reports the requested and actually readable chapter ra
 
 `gc_run.py` is dry-run by default. `--apply` writes an operation manifest before moving anything, deduplicates parent/child candidates and rolls back partial failures. Applied archives can be restored. Permanent `--purge` requires a valid manifest and matching fingerprints.
 
-See `scripts/NKG_V2_COMMANDS.md`, `references/architecture-v2.md`, `references/accuracy-preserving-token-optimization.md`, `references/expansion-schema.md`, and `references/expansion-workflows.md`.
+See `scripts/NKG_V2_COMMANDS.md`, `references/architecture-v2.md`, `references/accuracy-preserving-token-optimization.md`, `references/display-intelligence-contract.md`, `references/expansion-schema.md`, and `references/expansion-workflows.md`.
 
 ## Install
 
@@ -134,7 +150,7 @@ From this directory:
 python -m unittest discover -s scripts -p "test_*.py"
 ```
 
-CI additionally installs real Chrome/Selenium and runs non-monotonic slider tests, cross-panel chapter consistency, spoiler-marker leakage checks, overlapping-evidence highlighting, GC apply/rollback/restore/purge checks, accuracy/runtime regression tests, and a 1200-chapter / 450-character performance fixture.
+CI additionally installs real Chrome/Selenium and runs non-monotonic slider tests, cross-panel chapter consistency, spoiler-marker leakage checks, entity-detail temporal leakage checks, snapshot-diff/quality UI checks, overlapping-evidence highlighting, reader deep-link checks, GC apply/rollback/restore/purge checks, accuracy/runtime regression tests, and a 1200-chapter / 450-character performance fixture.
 
 ## Scope and data hygiene
 
