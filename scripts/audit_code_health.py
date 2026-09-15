@@ -3,10 +3,16 @@
 
 The audit intentionally distinguishes hard safety/correctness smells from
 legacy maintainability debt. Hard findings fail ``--strict``; large modules,
-long functions, broad exception handlers and legacy registry drift are reported
-as warnings so they can be reduced without turning the first audit into noise.
-Test modules are excluded from hard production scanning because controlled
-monkey-patching is a legitimate test technique.
+long functions and broad exception handlers are warnings so they can be reduced
+without turning the first audit into noise. Test modules are excluded from hard
+production scanning because controlled monkey-patching is a legitimate test
+technique.
+
+Only registries that claim the full canonical record surface are required to
+match ``required_fields.ARRAY_KINDS``. ``validate_graph.py`` is intentionally the
+historical/base structural layer; ``validate_full_graph.py`` composes that base
+with expansion and semantic-invariant validation, so the base validator is not
+misreported as registry drift merely because it does not own expansion arrays.
 """
 from __future__ import annotations
 
@@ -117,15 +123,17 @@ def registry_observations(root: Path) -> list[dict[str, Any]]:
         import export_ai_bundle
         import merge_graph
         import required_fields
-        import validate_graph
     except ImportError as exc:
         return [{"code": "registry_import_failed", "path": str(root), "message": str(exc)}]
     canonical = set(required_fields.ARRAY_KINDS)
+    # These modules consume/produce the complete canonical record surface and
+    # must therefore stay exactly aligned with the canonical registry. The base
+    # legacy validator intentionally validates only its historical layer and is
+    # composed by validate_full_graph.py with expansion/invariant validators.
     registries = {
         "build_results_facts.ARRAYS": set(build_results_facts.ARRAYS),
         "export_ai_bundle.GROUPS": set(export_ai_bundle.GROUPS),
         "merge_graph.ARRAYS": set(merge_graph.ARRAYS),
-        "validate_graph.ARRAYS": set(validate_graph.ARRAYS),
     }
     for name, values in registries.items():
         if values != canonical:
