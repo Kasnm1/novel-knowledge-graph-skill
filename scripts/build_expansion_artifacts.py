@@ -72,7 +72,8 @@ def implementation_files(scripts: Path) -> list[Path]:
     names = (
         "build_expansion_artifacts.py", "validate_full_graph.py", "validate_graph.py",
         "extension_contracts.py", "filter_graph_asof.py", "derive_novel_views.py",
-        "build_quality_report.py", "build_provenance_index.py", "build_unified_dashboard.py",
+        "build_quality_report.py", "build_provenance_index.py", "build_entity_profiles.py",
+        "build_unified_dashboard.py", "enhance_unified_dashboard.py",
         "build_expansion_candidates.py", "build_reader_overlay.py", "build_snapshot_checkpoints.py",
     )
     files = [scripts / name for name in names]
@@ -87,6 +88,7 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--chapters-jsonl", type=Path)
     parser.add_argument("--collection-manifest", type=Path)
+    parser.add_argument("--display-hints", type=Path, help="Optional AI-authored derived display hints; never a canonical fact source")
     parser.add_argument("--cutoff", type=int)
     parser.add_argument("--protagonist-id", action="append", default=[])
     parser.add_argument("--checkpoint-interval", type=int, default=0, help="Prebuild strict snapshot checkpoints; 0 disables")
@@ -111,6 +113,7 @@ def main() -> int:
             "source_manifest": args.manifest.resolve() if args.manifest else None,
             "chapters_jsonl": args.chapters_jsonl.resolve() if args.chapters_jsonl else None,
             "collection_manifest": args.collection_manifest.resolve() if args.collection_manifest else None,
+            "display_hints": args.display_hints.resolve() if args.display_hints else None,
         },
         parameters={
             "cutoff": args.cutoff,
@@ -136,7 +139,7 @@ def main() -> int:
             previous["cache_reuse_rejected"] = cache_errors
 
     manifest: dict[str, Any] = {
-        "schema_version": 4,
+        "schema_version": 5,
         "status": "running",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_graph": str(args.graph.resolve()),
@@ -144,6 +147,7 @@ def main() -> int:
         "cutoff": args.cutoff,
         "checkpoint_interval": args.checkpoint_interval,
         "step_timeout_seconds": timeout,
+        "display_hints": str(args.display_hints.resolve()) if args.display_hints else None,
         "build_cache_key": cache_key,
         "cache_material": cache_material,
         "steps": [],
@@ -193,6 +197,13 @@ def main() -> int:
     if run_step("provenance", [sys.executable, scripts / "build_provenance_index.py", "--graph", graph, "--output", provenance], manifest, timeout):
         return fail("provenance index failed")
 
+    profiles = out / "entity-profiles.json"
+    profile_command = [sys.executable, scripts / "build_entity_profiles.py", "--graph", graph, "--output", profiles]
+    if args.display_hints:
+        profile_command += ["--hints", args.display_hints]
+    if run_step("entity-profiles", profile_command, manifest, timeout):
+        return fail("entity display profile build failed")
+
     candidate_command = [sys.executable, scripts / "build_expansion_candidates.py", "--graph", args.graph, "--output", out / "expansion-candidates.json"]
     if args.chapters_jsonl:
         candidate_command += ["--chapters-jsonl", args.chapters_jsonl]
@@ -210,6 +221,11 @@ def main() -> int:
         dashboard += ["--protagonist-id", protagonist_id]
     if run_step("dashboard", dashboard, manifest, timeout):
         return fail("dashboard build failed")
+    if run_step("dashboard-intelligence", [
+        sys.executable, scripts / "enhance_unified_dashboard.py",
+        "--dashboard", out / "dashboard.html", "--profiles", profiles, "--quality", quality,
+    ], manifest, timeout):
+        return fail("dashboard intelligence enhancement failed")
 
     if args.chapters_jsonl:
         reader = [sys.executable, scripts / "build_reader_overlay.py", "--graph", args.graph, "--chapters-jsonl", args.chapters_jsonl, "--output", out / "reader.html"]
@@ -228,7 +244,7 @@ def main() -> int:
 
     required = [
         out / "validation-base.json", out / "validation-expansion.json", out / "validation-invariants.json",
-        views, quality, provenance, out / "dashboard.html", out / "expansion-candidates.json",
+        views, quality, provenance, profiles, out / "dashboard.html", out / "expansion-candidates.json",
     ]
     if args.cutoff is not None:
         required.append(graph)
@@ -248,7 +264,8 @@ def main() -> int:
     write_manifest(manifest_path, manifest)
     print(json.dumps({
         "status": "complete", "manifest": str(manifest_path), "dashboard": str(out / "dashboard.html"),
-        "views": str(views), "quality": str(quality), "provenance": str(provenance), "build_cache_key": cache_key,
+        "views": str(views), "quality": str(quality), "provenance": str(provenance), "profiles": str(profiles),
+        "build_cache_key": cache_key,
     }, ensure_ascii=False))
     return 0
 
