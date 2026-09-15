@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Install the expansion record contract into legacy pipeline modules at runtime.
+"""Compatibility shim for pre-expansion callers.
 
-The repository historically centralised required fields in ``required_fields``
-but older releases do not know ``commitments`` yet. Wrappers import this module
-before invoking the legacy merge/check scripts, preserving compatibility while
-keeping the new top-level record type singular.
+The commitment contract now lives directly in ``required_fields.py``. Older
+wrappers imported ``install_required_fields`` to mutate that module at runtime;
+keeping this no-op assertion preserves their import surface without hidden
+process-global schema changes.
 """
 from __future__ import annotations
 
@@ -19,8 +19,12 @@ COMMITMENT_REQUIRED_KEYS = (
 
 
 def install_required_fields() -> None:
+    """Verify the canonical registry instead of mutating it."""
     import required_fields
 
-    required_fields.REQUIRED["commitment"] = COMMITMENT_REQUIRED
-    required_fields.REQUIRED_KEYS["commitment"] = COMMITMENT_REQUIRED_KEYS
-    required_fields.ARRAY_KINDS["commitments"] = "commitment"
+    if required_fields.REQUIRED.get("commitment") != COMMITMENT_REQUIRED:
+        raise RuntimeError("required_fields.REQUIRED commitment contract drifted")
+    if required_fields.REQUIRED_KEYS.get("commitment") != COMMITMENT_REQUIRED_KEYS:
+        raise RuntimeError("required_fields.REQUIRED_KEYS commitment contract drifted")
+    if required_fields.ARRAY_KINDS.get("commitments") != "commitment":
+        raise RuntimeError("required_fields.ARRAY_KINDS is missing commitments")
