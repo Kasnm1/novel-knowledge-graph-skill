@@ -16,6 +16,7 @@ from typing import Any, Iterable, Mapping
 
 from derive_novel_views import build_views
 from filter_graph_asof import filter_graph
+from io_utils import atomic_write_json
 
 
 def _records(value: Any) -> list[dict[str, Any]]:
@@ -89,8 +90,7 @@ def main() -> int:
         collection_manifest,
         strict=not args.compat,
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_json(args.output, snapshot, trailing_newline=False)
     print(json.dumps({
         "output": str(args.output),
         "chapter": args.chapter,
