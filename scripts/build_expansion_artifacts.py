@@ -73,7 +73,7 @@ def implementation_files(scripts: Path) -> list[Path]:
         "build_expansion_artifacts.py", "validate_full_graph.py", "validate_graph.py",
         "extension_contracts.py", "filter_graph_asof.py", "derive_novel_views.py",
         "build_quality_report.py", "build_provenance_index.py", "build_entity_profiles.py",
-        "build_unified_dashboard.py", "enhance_unified_dashboard.py",
+        "build_story_time_view.py", "build_unified_dashboard.py", "enhance_unified_dashboard.py",
         "build_expansion_candidates.py", "build_reader_overlay.py", "build_snapshot_checkpoints.py",
     )
     files = [scripts / name for name in names]
@@ -139,7 +139,7 @@ def main() -> int:
             previous["cache_reuse_rejected"] = cache_errors
 
     manifest: dict[str, Any] = {
-        "schema_version": 5,
+        "schema_version": 6,
         "status": "running",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_graph": str(args.graph.resolve()),
@@ -188,6 +188,10 @@ def main() -> int:
         command += ["--protagonist-id", protagonist_id]
     if run_step("derive-views", command, manifest, timeout):
         return fail("view derivation failed")
+
+    story_time = out / "story-time-view.json"
+    if run_step("story-time", [sys.executable, scripts / "build_story_time_view.py", "--graph", graph, "--output", story_time], manifest, timeout):
+        return fail("story time view failed")
 
     quality = out / "quality-report.json"
     if run_step("quality", [sys.executable, scripts / "build_quality_report.py", "--graph", graph, "--output", quality], manifest, timeout):
@@ -244,7 +248,7 @@ def main() -> int:
 
     required = [
         out / "validation-base.json", out / "validation-expansion.json", out / "validation-invariants.json",
-        views, quality, provenance, profiles, out / "dashboard.html", out / "expansion-candidates.json",
+        views, story_time, quality, provenance, profiles, out / "dashboard.html", out / "expansion-candidates.json",
     ]
     if args.cutoff is not None:
         required.append(graph)
@@ -264,8 +268,8 @@ def main() -> int:
     write_manifest(manifest_path, manifest)
     print(json.dumps({
         "status": "complete", "manifest": str(manifest_path), "dashboard": str(out / "dashboard.html"),
-        "views": str(views), "quality": str(quality), "provenance": str(provenance), "profiles": str(profiles),
-        "build_cache_key": cache_key,
+        "views": str(views), "story_time": str(story_time), "quality": str(quality), "provenance": str(provenance),
+        "profiles": str(profiles), "build_cache_key": cache_key,
     }, ensure_ascii=False))
     return 0
 
