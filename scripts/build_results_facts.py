@@ -61,6 +61,7 @@ ARRAYS = (
     "entities", "events", "relations", "state_changes", "evidence",
     "foreshadowing", "review_issues", "romance_routes", "intimate_acts",
     "character_traits", "chapter_summaries", "level_conversions", "item_roles", "story_arcs",
+    "commitments",
 )
 
 
@@ -263,6 +264,7 @@ def collect(run_dir: Path) -> dict:
     add("story_arcs_total", "剧情弧", counts["story_arcs"])
     add("level_conversions_total", "跨体系换算", counts["level_conversions"])
     add("item_roles_total", "物品角色记录", counts["item_roles"])
+    add("commitments_total", "承诺与恩情", counts["commitments"])
     # 期望非空却为空的类型：**必须 0**，且 `--check` 会非零退出。
     # 这不是「显示一个 0」——显示正是失败过的那一半（character_traits 的 0 在
     # AI_CONTEXT 里挂了几轮没人管）。见 required_fields.EXPECTED_NON_EMPTY。
