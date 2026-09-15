@@ -5,8 +5,7 @@ The canonical graph stays immutable. This module closes every known temporal
 surface before any derived view is built: names/aliases, summaries, attributes,
 current_state, style observations, relation/commitment status, evidence and all
 chapter-bound arrays. Unknown temporal provenance is removed in strict mode and
-reported under ``metadata.temporal_provenance_gaps`` instead of being allowed to
-leak future prose.
+reported without echoing hidden prose.
 """
 from __future__ import annotations
 
@@ -53,7 +52,7 @@ def _meta_lookup(mapping: Any, entity_id: str, key: str | None = None) -> int | 
     nested = mapping.get(entity_id)
     if isinstance(nested, dict):
         return _chapter(nested.get(key))
-    return _chapter(mapping.get(key))
+    return None
 
 
 def _history_value(history: Any, chapter: int, value_keys: Iterable[str]) -> Any:
@@ -89,7 +88,7 @@ def _filter_history(history: Any, chapter: int) -> list[dict[str, Any]]:
     return out
 
 
-def _safe_name(entity: dict[str, Any], chapter: int, meta: dict[str, Any], gaps: list[str]) -> str:
+def _safe_name(entity: dict[str, Any], chapter: int, meta: dict[str, Any], gaps: list[str], strict: bool, terminal_chapter: int | None) -> str:
     entity_id = str(entity.get("id") or "")
     value = _history_value(entity.get("name_history"), chapter, ("name", "value"))
     if isinstance(value, str) and value.strip():
@@ -97,8 +96,12 @@ def _safe_name(entity: dict[str, Any], chapter: int, meta: dict[str, Any], gaps:
     name_first = _chapter(entity.get("name_first_chapter"))
     if name_first is None:
         name_first = _meta_lookup(meta.get("name_first_chapter"), entity_id)
-    if name_first is not None and name_first > chapter:
-        gaps.append(f"entity:{entity_id}:canonical_name_after_cutoff")
+    if name_first is not None:
+        if name_first > chapter:
+            return f"[{entity.get('type') or 'entity'}:{entity_id}]"
+        return str(entity.get("name") or entity_id)
+    if strict and terminal_chapter is not None and chapter < terminal_chapter:
+        gaps.append(f"entity:{entity_id}:canonical_name:untimed")
         return f"[{entity.get('type') or 'entity'}:{entity_id}]"
     return str(entity.get("name") or entity_id)
 
@@ -111,13 +114,14 @@ def _filter_aliases(entity: dict[str, Any], chapter: int, meta: dict[str, Any], 
         if not isinstance(values, list):
             continue
         kept = []
+        unknown_count = 0
         for value in values:
             if isinstance(value, dict):
                 start = first_visible_chapter(value)
                 if start is None:
                     start = _chapter(value.get("first_chapter"))
                 if start is None and strict:
-                    gaps.append(f"entity:{entity_id}:{field}:untimed")
+                    unknown_count += 1
                     continue
                 if start is not None and start > chapter:
                     continue
@@ -133,13 +137,13 @@ def _filter_aliases(entity: dict[str, Any], chapter: int, meta: dict[str, Any], 
                 nested = alias_meta.get(entity_id)
                 if isinstance(nested, dict):
                     start = _chapter(nested.get(value))
-                if start is None:
-                    start = _chapter(alias_meta.get(value))
             if start is None and strict:
-                gaps.append(f"entity:{entity_id}:{field}:{value}:untimed")
+                unknown_count += 1
                 continue
             if start is None or start <= chapter:
                 kept.append(value)
+        if unknown_count:
+            gaps.append(f"entity:{entity_id}:{field}:untimed:{unknown_count}")
         entity[field] = kept
 
 
@@ -151,17 +155,20 @@ def _project_entity_prose(entity: dict[str, Any], chapter: int, meta: dict[str, 
         if hist_value is not None:
             entity[field] = hist_value
             entity[f"{field}_history"] = _filter_history(history, chapter)
-            continue
-        first = _chapter(entity.get(f"{field}_chapter"))
-        if first is None:
-            first = _chapter(entity.get(f"{field}_first_chapter"))
-        if first is None:
-            first = _meta_lookup(meta.get(f"{field}_first_chapter"), entity_id)
-        if first is not None and first > chapter:
-            entity.pop(field, None)
-        elif field in entity and strict and first is None:
-            gaps.append(f"entity:{entity_id}:{field}:untimed")
-            entity.pop(field, None)
+        else:
+            first = _chapter(entity.get(f"{field}_chapter"))
+            if first is None:
+                first = _chapter(entity.get(f"{field}_first_chapter"))
+            if first is None:
+                first = _meta_lookup(meta.get(f"{field}_first_chapter"), entity_id)
+            if first is not None and first > chapter:
+                entity.pop(field, None)
+            elif field in entity and strict and first is None:
+                gaps.append(f"entity:{entity_id}:{field}:untimed")
+                entity.pop(field, None)
+        for timing_key in (f"{field}_chapter", f"{field}_first_chapter"):
+            if _chapter(entity.get(timing_key)) is not None and entity[timing_key] > chapter:
+                entity.pop(timing_key, None)
 
 
 def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, Any], gaps: list[str], strict: bool) -> None:
@@ -178,6 +185,7 @@ def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, An
         if isinstance(key, str):
             reconstructed[key] = deepcopy(row.get("value"))
     raw = entity.get("attributes")
+    unknown = 0
     if isinstance(raw, dict):
         first_map = meta.get("attribute_first_chapter")
         for key, value in raw.items():
@@ -189,7 +197,9 @@ def _project_attributes(entity: dict[str, Any], chapter: int, meta: dict[str, An
             elif first is None and not strict:
                 reconstructed[key] = deepcopy(value)
             elif first is None and strict:
-                gaps.append(f"entity:{entity_id}:attribute:{key}:untimed")
+                unknown += 1
+    if unknown:
+        gaps.append(f"entity:{entity_id}:attributes:untimed:{unknown}")
     entity["attributes"] = reconstructed
     if history:
         entity["attribute_history"] = _filter_history(history, chapter)
@@ -217,19 +227,41 @@ def _commitment_asof(row: dict[str, Any], chapter: int) -> None:
         row["status"] = "active"
 
 
+def _scrub_temporal_metadata(meta: dict[str, Any], chapter: int) -> None:
+    for field in ("name_first_chapter", "summary_first_chapter", "description_first_chapter"):
+        mapping = meta.get(field)
+        if isinstance(mapping, dict):
+            meta[field] = {k: v for k, v in mapping.items() if _chapter(v) is not None and v <= chapter}
+    for field in ("alias_first_chapter", "attribute_first_chapter"):
+        mapping = meta.get(field)
+        if not isinstance(mapping, dict):
+            continue
+        cleaned = {}
+        for entity_id, nested in mapping.items():
+            if not isinstance(nested, dict):
+                continue
+            kept = {key: value for key, value in nested.items() if _chapter(value) is not None and value <= chapter}
+            if kept:
+                cleaned[entity_id] = kept
+        meta[field] = cleaned
+
+
 def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) -> dict[str, Any]:
     if not isinstance(chapter, int) or isinstance(chapter, bool) or chapter < 0:
         raise ValueError("chapter must be a non-negative integer")
     out = deepcopy(graph)
     meta = out.get("metadata") if isinstance(out.get("metadata"), dict) else {}
+    original_end = _chapter(meta.get("chapter_end"))
     gaps: list[str] = []
 
     entities = []
     for entity in recs(out.get("entities")):
         if _chapter(entity.get("first_chapter")) is not None and entity["first_chapter"] > chapter:
             continue
-        entity["name"] = _safe_name(entity, chapter, meta, gaps)
+        entity["name"] = _safe_name(entity, chapter, meta, gaps, strict, original_end)
         entity["name_history"] = _filter_history(entity.get("name_history"), chapter)
+        if _chapter(entity.get("name_first_chapter")) is not None and entity["name_first_chapter"] > chapter:
+            entity.pop("name_first_chapter", None)
         _filter_aliases(entity, chapter, meta, gaps, strict)
         _project_entity_prose(entity, chapter, meta, gaps, strict)
         _project_attributes(entity, chapter, meta, gaps, strict)
@@ -260,10 +292,10 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
         start = _chapter(relation.get("valid_from"))
         if start is not None and start > chapter:
             continue
-        original_end = _chapter(relation.get("valid_to"))
+        original_relation_end = _chapter(relation.get("valid_to"))
         relation["observations"] = [o for o in recs(relation.get("observations")) if _chapter(o.get("chapter")) is None or o["chapter"] <= chapter]
         _filter_evidence_ids(relation, evidence_ids)
-        if original_end is not None and original_end > chapter:
+        if original_relation_end is not None and original_relation_end > chapter:
             relation.pop("valid_to", None)
             if relation.get("status") not in {None, "active", "uncertain"}:
                 relation["status"] = "active"
@@ -284,11 +316,7 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
         state_changes.append(change)
     out["state_changes"] = state_changes
 
-    generic = (
-        "intimate_acts", "level_conversions", "character_traits", "chapter_summaries",
-        "item_roles", "commitments", "review_issues",
-    )
-    for key in generic:
+    for key in ("intimate_acts", "level_conversions", "character_traits", "chapter_summaries", "item_roles", "commitments", "review_issues"):
         filtered = []
         for row in recs(out.get(key)):
             if not visible_record(row, chapter, strict_unknown=False):
@@ -308,7 +336,6 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
             continue
         ambiguity = _chapter(route.get("ambiguity_started_chapter"))
         confirmed = _chapter(route.get("confirmed_chapter"))
-        intimacy = _chapter(route.get("first_sex_chapter"))
         for chfield, evfield in (("confirmed_chapter", "confirmed_evidence_ids"), ("first_sex_chapter", "first_sex_evidence_ids"), ("ambiguity_started_chapter", "ambiguity_evidence_ids")):
             value = _chapter(route.get(chfield))
             if value is not None and value > chapter:
@@ -320,9 +347,6 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
             route["status"] = "ambiguous"
         else:
             route["status"] = "introduced"
-        if intimacy is not None and intimacy > chapter:
-            route["first_sex_chapter"] = None
-            route["first_sex_evidence_ids"] = []
         routes.append(route)
     out["romance_routes"] = routes
 
@@ -360,7 +384,7 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
         if start is None:
             start = _chapter(obs.get("chapter_start"))
         if start is None and strict:
-            gaps.append(f"style_observation:{obs.get('id') or '?'}:untimed")
+            gaps.append("style_observation:untimed")
             continue
         if start is not None and start > chapter:
             continue
@@ -372,6 +396,7 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
     if "style_observations" in out:
         out["style_observations"] = style_rows
 
+    _scrub_temporal_metadata(meta, chapter)
     meta["spoiler_cutoff_chapter"] = chapter
     meta["spoiler_strict"] = strict
     meta["temporal_provenance_gaps"] = sorted(set(gaps))
@@ -380,8 +405,7 @@ def filter_graph(graph: dict[str, Any], chapter: int, *, strict: bool = True) ->
     if analyzed:
         meta["chapter_start"], meta["chapter_end"] = min(analyzed), max(analyzed)
     else:
-        end = meta.get("chapter_end")
-        meta["chapter_end"] = min(chapter, end) if isinstance(end, int) else chapter
+        meta["chapter_end"] = min(chapter, original_end) if isinstance(original_end, int) else chapter
     out["metadata"] = meta
     return out
 
@@ -397,11 +421,7 @@ def main() -> int:
     filtered = filter_graph(graph, args.chapter, strict=not args.compat)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(filtered, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({
-        "output": str(args.output), "chapter": args.chapter,
-        "entities": len(filtered.get("entities", [])), "events": len(filtered.get("events", [])),
-        "temporal_provenance_gaps": len(filtered.get("metadata", {}).get("temporal_provenance_gaps", [])),
-    }, ensure_ascii=False))
+    print(json.dumps({"output":str(args.output),"chapter":args.chapter,"entities":len(filtered.get("entities",[])),"events":len(filtered.get("events",[])),"temporal_provenance_gaps":len(filtered.get("metadata",{}).get("temporal_provenance_gaps",[]))},ensure_ascii=False))
     return 0
 
 
