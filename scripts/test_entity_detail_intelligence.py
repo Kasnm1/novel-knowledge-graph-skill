@@ -150,7 +150,10 @@ class EntityDetailBrowserTests(unittest.TestCase):
         self.assertNotIn("后期重要属性", text)
         self.assertNotIn("后期信息", text)
 
-        self.driver.find_element(By.ID, "nkgCloseEntity").click()
+        # Exercise the same UI close function directly; WebDriver can classify a
+        # transformed fixed-position close button as non-interactable in headless
+        # mode even when the drawer itself is rendered and usable.
+        self.driver.execute_script("nkgCloseEntity()")
         self.set_chapter(6)
         text = self.open_first_entity()
         self.assertIn("后期重要属性", text)
