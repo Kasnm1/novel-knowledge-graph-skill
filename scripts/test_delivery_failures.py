@@ -17,8 +17,15 @@ class DeliveryFailureTests(unittest.TestCase):
             graph = root / "graph.json"
             graph.write_text("{}", encoding="utf-8")
             out = root / "out"
-            # validate, derive, dashboard succeed; candidate scan reports incomplete.
-            with patch.object(build_expansion_artifacts, "run_step", side_effect=[0, 0, 0, 2]), patch(
+
+            # Inject the failure by semantic step name rather than subprocess
+            # position. The build may legitimately add validation/quality/cache
+            # steps without changing the contract under test: candidate failure
+            # must propagate to the top-level result.
+            def fake_run_step(name, cmd, manifest, timeout=None):
+                return 2 if name == "candidates" else 0
+
+            with patch.object(build_expansion_artifacts, "run_step", side_effect=fake_run_step), patch(
                 "sys.argv", ["build_expansion_artifacts.py", "--graph", str(graph), "--output-dir", str(out)]
             ):
                 rc = build_expansion_artifacts.main()
