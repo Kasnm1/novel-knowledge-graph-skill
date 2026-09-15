@@ -82,7 +82,9 @@ class BrowserAcceptanceTests(unittest.TestCase):
     def test_shared_slider_keeps_all_panels_on_same_snapshot(self):
         for chapter in (1, 2, 8, 4, 7, 3, 5):
             self.set_chapter(chapter)
-            self.assertIn("统一快照", self.driver.find_element(By.ID, "state").text)
+            state = self.driver.find_element(By.ID, "state").text
+            self.assertIn("实体", state)
+            self.assertIn("事件", state)
             for tab in ("总览", "仓库", "剧情线", "集合", "承诺", "资源", "技能", "写法"):
                 self.open_tab(tab)
             self.assertEqual(self.driver.find_element(By.ID, "cl").text, str(chapter))
