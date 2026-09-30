@@ -13,6 +13,8 @@ from build_dashboard import DEFAULT_VOCABULARY, merge_vocabulary
 from reader_prose import ID_PREFIXES, strip_process_text
 from agent_detection import detect_agents, is_agent
 from intimacy_types import EJACULATION_SITES, INTIMACY_TYPE_LABELS, canonical_intimacy_type
+from io_utils import atomic_write_text
+from nkg.temporal.asof import filter_graph
 from snapshot import dynamic_state_for_entity
 from validate_style_observations import validate_style_observations
 
@@ -149,7 +151,7 @@ def relation_facet(relation: dict, person_id: str, entities: dict[str, dict]) ->
     return "relationship"
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--graph", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -157,9 +159,14 @@ def main() -> int:
     parser.add_argument("--vocabulary", type=Path)
     parser.add_argument("--chapter", type=int, help="State snapshot chapter; defaults to the analyzed range end")
     parser.add_argument("--style-observations", type=Path, help="Optional style-observations.json; auto-discovered beside graph")
-    args = parser.parse_args()
+    parser.add_argument("--cutoff", type=int,
+                        help="Strict spoiler boundary; the same filter_graph closure export_ai_bundle.py uses")
+    args = parser.parse_args(argv)
 
-    graph = reader_safe_strings(json.loads(args.graph.resolve().read_text(encoding="utf-8")))
+    raw_graph = json.loads(args.graph.resolve().read_text(encoding="utf-8"))
+    if args.cutoff is not None:
+        raw_graph = filter_graph(raw_graph, args.cutoff, strict=True)
+    graph = reader_safe_strings(raw_graph)
     style_path = args.style_observations or args.graph.resolve().parent / "style-observations.json"
     style_observations = (
         validate_style_observations(json.loads(style_path.resolve().read_text(encoding="utf-8")), graph)
@@ -850,7 +857,7 @@ def main() -> int:
         causes = f"；原因事件：{join_ids(event.get('cause_event_ids'))}" if event.get("cause_event_ids") else ""
         consequences = f"；后续事件：{join_ids(event.get('consequence_event_ids'))}" if event.get("consequence_event_ids") else ""
         lines.append(
-            f"- 第 {event['chapter']} 章｜{event['title']}｜类型：{term('event_types', event.get('type'))}｜"
+            f"- 第 {event['chapter']} 章｜{event.get('title') or ''}｜类型：{term('event_types', event.get('type'))}｜"
             f"{event.get('description', '')}｜参与者：{participants}{location}{causes}{consequences}｜"
             f"证据：{join_ids(event.get('evidence_ids'))}"
         )
@@ -900,7 +907,7 @@ def main() -> int:
 
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    atomic_write_text(output, "\n".join(lines).rstrip() + "\n")
     print(output)
     return 0
 

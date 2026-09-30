@@ -22,6 +22,7 @@ from io_utils import atomic_write_text
 from required_fields import ARRAY_KINDS
 from validate_style_observations import validate_style_observations
 from nkg.core.records import chapter_of as _chapter_of
+import export_ai_context
 
 LINE_RE = re.compile(r"(?:(?:原文)?第\s*\d+\s*(?:[—–-]\s*\d+\s*)?行|\b(?:source[ _-]?)?lines?\s*\d+(?:\s*[-–—]\s*\d+)?)", re.IGNORECASE)
 GROUPS = tuple(ARRAY_KINDS)
@@ -285,6 +286,19 @@ def main(argv: list[str] | None = None) -> int:
         "chapters": chapter_index,
         "modules": sorted(files),
     }
+    # The single-file story bible comes from the same graph, cutoff and snapshot
+    # chapter as the modules, so the two AI surfaces cannot disagree on spoilers.
+    bible_args = ["--graph", str(args.graph), "--output", str(out / "AI_CONTEXT.md"),
+                  "--validation", str(args.validation), "--chapter", str(snapshot_chapter)]
+    if args.vocabulary:
+        bible_args += ["--vocabulary", str(args.vocabulary)]
+    if args.cutoff is not None:
+        bible_args += ["--cutoff", str(args.cutoff)]
+    if style_path.is_file():
+        bible_args += ["--style-observations", str(style_path)]
+    export_ai_context.main(bible_args)
+    files["AI_CONTEXT.md"] = hashlib.sha256((out / "AI_CONTEXT.md").read_bytes()).hexdigest()
+    index["modules"] = sorted(files)
     files["INDEX.json"] = write(out / "INDEX.json", json.dumps(index, ensure_ascii=False, indent=2, sort_keys=True))
 
     def dependency(path: Path | None) -> dict[str, str] | None:

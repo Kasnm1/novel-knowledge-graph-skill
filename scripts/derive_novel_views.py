@@ -54,13 +54,28 @@ def _facet_looks_like_level(facet: object) -> bool:
     return text in LEVEL_FACET_HINTS or any(hint.lower() in text for hint in LEVEL_FACET_HINTS if len(hint) >= 2)
 
 
+def level_key(change: dict[str, Any]) -> str | None:
+    """The series a level change belongs to: its axis, never just its facet.
+
+    A `level` change is keyed by `target_id` (the axis); keying by facet merged a
+    character's cultivation realm and demon rank into one series and let the
+    later axis overwrite the other. Legacy facets named like a level (境界, rank)
+    remain their own untargeted series.
+    """
+    facet = change.get("facet")
+    if facet == "level":
+        target = change.get("target_id")
+        return target if isinstance(target, str) else "level"
+    return str(facet) if _facet_looks_like_level(facet) else None
+
+
 def level_snapshot(graph: dict[str, Any], entity_id: str, chapter: int) -> dict[str, Any]:
     matching = [
         change for change in records(graph.get("state_changes"))
         if change.get("entity_id") == entity_id
         and isinstance(change.get("chapter"), int)
         and change["chapter"] <= chapter
-        and _facet_looks_like_level(change.get("facet"))
+        and level_key(change) is not None
     ]
     matching.sort(key=lambda c: (c.get("chapter", 0), str(c.get("id") or "")))
     latest: dict[str, Any] = {}
@@ -68,8 +83,7 @@ def level_snapshot(graph: dict[str, Any], entity_id: str, chapter: int) -> dict[
         end = change.get("end_chapter")
         if isinstance(end, int) and chapter > end:
             continue
-        facet = str(change.get("facet"))
-        latest[facet] = deepcopy(change.get("after") if "after" in change else change.get("target_id"))
+        latest[level_key(change)] = deepcopy(change.get("after"))
     return latest
 
 
@@ -345,9 +359,10 @@ def derive_foreshadowing(graph: dict[str, Any]) -> dict[str, Any]:
 def derive_levels(graph: dict[str, Any], names: dict[str, str]) -> dict[str, Any]:
     series: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
     for change in records(graph.get("state_changes")):
-        if not _facet_looks_like_level(change.get("facet")) or not isinstance(change.get("entity_id"), str):
+        key = level_key(change)
+        if key is None or not isinstance(change.get("entity_id"), str):
             continue
-        series[change["entity_id"]][str(change.get("facet"))].append({"chapter": change.get("chapter"), "after": deepcopy(change.get("after")),
+        series[change["entity_id"]][key].append({"chapter": change.get("chapter"), "after": deepcopy(change.get("after")),
                                                                        "before": deepcopy(change.get("before")), "action": change.get("action"),
                                                                        "record_id": change.get("id")})
     rows = []

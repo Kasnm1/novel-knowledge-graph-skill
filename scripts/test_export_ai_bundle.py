@@ -35,6 +35,7 @@ class ExportBundleTests(unittest.TestCase):
                 "STORY_ARCS.md",
                 "STYLE.md",
                 "INDEX.json",
+                "AI_CONTEXT.md",
                 "characters/char_a.md",
                 "characters/char_b.md",
                 "chapters/0001.md",
