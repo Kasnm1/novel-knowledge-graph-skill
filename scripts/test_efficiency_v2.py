@@ -7,26 +7,25 @@ from pathlib import Path
 
 from nkg.core.cache import build_cache_key, sha256_file, verify_artifact_manifest
 from nkg.core.provenance import build_provenance_index
-from nkg.extraction.chunking import plan_dynamic_chunks
+from nkg.workflow.planner import plan_audit
 from nkg.extraction.resume import build_resume_capsule
 from nkg.extraction.wire import compact_fragment, expand_fragment
 from test_final_delivery import fixture_graph
 
 
 class ChunkingTests(unittest.TestCase):
-    def test_dynamic_chunks_keep_whole_chapters_and_mark_oversize(self):
+    def test_units_keep_whole_chapters_and_mark_oversize(self):
         rows = [
             {"chapter": 1, "text": "a" * 10},
             {"chapter": 2, "text": "b" * 10},
             {"chapter": 3, "text": "c" * 100},
             {"chapter": 4, "text": "d" * 10},
         ]
-        chunks = plan_dynamic_chunks(rows, target_chars=25, max_chapters=10, overlap_chars=5)
-        self.assertEqual(chunks[0]["chapters"], [1, 2])
-        self.assertEqual(chunks[1]["chapters"], [3])
-        self.assertTrue(chunks[1]["oversize_single_chapter"])
-        self.assertEqual(chunks[1]["overlap_chars"], 5)
-        self.assertNotIn("source_text", chunks[0])
+        units = plan_audit(rows, target_chars=25, max_chapters=10, densities={})["units"]
+        self.assertEqual(units[0]["chapters"], [1, 2])
+        self.assertEqual(units[1]["chapters"], [3])
+        self.assertTrue(units[1]["oversize_single_chapter"])
+        self.assertFalse(units[0]["oversize_single_chapter"])
 
 
 class ResumeAndWireTests(unittest.TestCase):

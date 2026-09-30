@@ -27,6 +27,8 @@ from the record rules. Legacy fragments without the flag are only checked when t
 
 ## Work unit
 
+The survey, ID registry, lane/unit plan, state capsule and verifier loop are in `ai-workflow.md`.
+
 Audit **3–5 chapters per worker**, one card per chapter, written while the chapter is in front of you.
 Ten chapters per worker is what produced the thin run above: the checklist gets compressed into
 "the main plot point" per chapter. Contiguous ranges, `plan_fragments.py`, immutable fragments and the

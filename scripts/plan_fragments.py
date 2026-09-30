@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from io_utils import atomic_write_text
 from nkg.core.records import read_chapter_index
+from nkg.workflow.planner import split_balanced
 
 # Author notes in these books are a few hundred characters; a story chapter is
 # several thousand. The threshold only needs to separate those two populations.
@@ -53,37 +54,8 @@ def is_note(record: dict) -> bool:
 
 
 def split_contiguous(sizes: list[int], count: int) -> list[int]:
-    """Cut `sizes` into `count` contiguous groups minimising the largest group.
-
-    Returns the end indices of each group. Dynamic programming over prefix sums;
-    the chapter count here is small enough that O(n^2 * k) is instant.
-    """
-    n = len(sizes)
-    if count > n:
-        raise ValueError(f"cannot make {count} contiguous groups from {n} chapters")
-    prefix = [0] * (n + 1)
-    for index, size in enumerate(sizes):
-        prefix[index + 1] = prefix[index] + size
-
-    # best[i][k] = (largest group size, end indices) for sizes[i:] split into k groups
-    best: list[list[tuple[int, list[int]] | None]] = [[None] * (count + 1) for _ in range(n + 1)]
-    for index in range(n):
-        best[index][1] = (prefix[n] - prefix[index], [n])
-    for groups in range(2, count + 1):
-        for index in range(n - groups + 1):
-            winner: tuple[int, list[int]] | None = None
-            for cut in range(index + 1, n - groups + 2):
-                tail = best[cut][groups - 1]
-                if tail is None:
-                    continue
-                candidate = max(prefix[cut] - prefix[index], tail[0])
-                if winner is None or candidate < winner[0]:
-                    winner = (candidate, [cut, *tail[1]])
-            best[index][groups] = winner
-    result = best[0][count]
-    if result is None:
-        raise ValueError("no contiguous split found")
-    return result[1]
+    """Cut `sizes` into `count` contiguous groups minimising the largest group."""
+    return split_balanced(sizes, count)
 
 
 def main() -> int:
