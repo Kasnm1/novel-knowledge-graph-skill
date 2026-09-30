@@ -11,39 +11,7 @@ from derive_asof_views import derive_asof_views
 from filter_graph_asof import filter_graph
 from gc_run import apply_plan, build_plan, load_manifest, restore, verify_for_purge
 
-FUTURE = "FUTURE_MARKER_777"
-
-
-def fixture_graph() -> dict:
-    evidence = [{"id":f"e{i}","chapter":i,"quote":f"chapter {i} evidence text long enough","source_line_start":1,"source_line_end":1} for i in range(1,10)]
-    return {
-        "metadata":{"title":"final-delivery-fixture","chapter_start":1,"chapter_end":9,"analyzed_chapters":list(range(1,10)),"protagonist_ids":["hero"],"alias_first_chapter":{"hero":{FUTURE:8}},"summary_first_chapter":{"hero":8},"attribute_first_chapter":{"hero":{"future_rank":8}}},
-        "entities":[
-            {"id":"hero","type":"character","name":"最终正式名","name_first_chapter":8,"name_history":[{"valid_from":1,"valid_to":7,"name":"早期名"},{"valid_from":8,"name":"最终正式名"}],"aliases":[FUTURE],"first_chapter":1,"summary":FUTURE,"attributes":{"future_rank":FUTURE},"attribute_history":[{"id":"ah1","chapter":2,"key":"realm","value":"early"}],"tags":["protagonist"],"evidence_ids":["e1"]},
-            {"id":"ally","type":"character","name":"同伴","first_chapter":1,"evidence_ids":["e1"]},
-            {"id":"skill","type":"skill","name":"身法","first_chapter":1,"categories":[{"id":"movement"}],"evidence_ids":["e1"]},
-            {"id":"item","type":"item","name":"灵石","first_chapter":1,"tags":["rarity/common","supply/repeatable"],"evidence_ids":["e1"]},
-            {"id":"loc","type":"location","name":"城","first_chapter":1,"evidence_ids":["e1"]},
-            {"id":"world","type":"location","name":"世界","first_chapter":1,"evidence_ids":["e1"]},
-        ],
-        "events":[
-            {"id":"ev2","type":"encounter","chapter":2,"title":"早期事件","description":"早期","participant_ids":["hero","ally"],"location_id":"loc","evidence_ids":["e2"]},
-            {"id":"ev8","type":"payoff","chapter":8,"title":FUTURE,"description":FUTURE,"participant_ids":["hero"],"evidence_ids":["e8"],"payoff":{"kind":"reversal","setup_ids":[]}},
-        ],
-        "relations":[
-            {"id":"rel_loc","source_id":"loc","target_id":"world","relation_type":"located_in","valid_from":1,"status":"active","evidence_ids":["e1"]},
-            {"id":"rel_skill","source_id":"hero","target_id":"skill","relation_type":"uses","valid_from":8,"status":"active","evidence_ids":["e8"]},
-        ],
-        "state_changes":[
-            {"id":"q2","entity_id":"hero","target_id":"item","facet":"inventory_quantity","action":"gained","chapter":2,"before":0,"after":1,"reason":"获得","evidence_ids":["e2"],"confidence":"explicit"},
-            {"id":"q8","entity_id":"hero","target_id":"item","facet":"inventory_quantity","action":"gained","chapter":8,"before":1,"after":99,"reason":FUTURE,"evidence_ids":["e8"],"confidence":"explicit"},
-        ],
-        "item_roles":[{"id":"ir2","item_id":"item","entity_id":"hero","role":"holder","valid_from":2,"action":"gained","cause_event_id":"ev2","evidence_ids":["e2"],"confidence":"explicit"}],
-        "commitments":[{"id":"cm","kind":"promise","promisor_ids":["hero"],"counterparty_ids":["ally"],"terms":"会回来","created_chapter":1,"deadline_chapter":None,"deadline_story_time":None,"stake_ids":[],"status":"fulfilled","resolved_chapter":8,"resolution":FUTURE,"observations":[{"chapter":8,"status":"fulfilled","evidence_ids":["e8"]}],"evidence_ids":["e1"],"confidence":"explicit"}],
-        "style_observations":[{"id":"voice8","entity_id":"hero","chapter":8,"observation":FUTURE,"evidence_ids":["e8"]}],
-        "chapter_summaries":[{"id":"cs2","chapter":2,"summary":"early summary","evidence_ids":["e2"],"pov_entity_ids":["hero"],"scene_count":1,"cliffhanger_type":"none"},{"id":"cs8","chapter":8,"summary":FUTURE,"evidence_ids":["e8"],"pov_entity_ids":["hero"],"scene_count":1,"cliffhanger_type":"reversal"}],
-        "evidence":evidence,"romance_routes":[],"intimate_acts":[],"level_conversions":[],"character_traits":[],"story_arcs":[],"foreshadowing":[],"review_issues":[],
-    }
+from testing_fixtures import FUTURE, fixture_graph  # noqa: E402,F401
 
 
 class FinalDeliveryTests(unittest.TestCase):

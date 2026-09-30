@@ -3,7 +3,8 @@ name: Expansion tests
 on:
   push:
     branches:
-      - feature/full-knowledge-graph-expansion
+      - main
+      - 'claude/**'
   pull_request:
     branches:
       - main

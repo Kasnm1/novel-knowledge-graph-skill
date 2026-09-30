@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 
 from build_unified_dashboard import build_html, build_model
-from test_code_audit_regressions import temporal_graph
-from test_final_delivery import FUTURE, fixture_graph
+from testing_fixtures import temporal_graph
+from testing_fixtures import FUTURE, fixture_graph
 
 try:
     from selenium import webdriver

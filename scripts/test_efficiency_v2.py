@@ -10,7 +10,7 @@ from nkg.core.provenance import build_provenance_index
 from nkg.workflow.planner import plan_audit
 from nkg.extraction.resume import build_resume_capsule
 from nkg.extraction.wire import compact_fragment, expand_fragment
-from test_final_delivery import fixture_graph
+from testing_fixtures import fixture_graph
 
 
 class ChunkingTests(unittest.TestCase):

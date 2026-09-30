@@ -10,7 +10,7 @@ from nkg.validation.accuracy import compare_outputs
 from nkg.validation.invariants import validate_invariants
 from nkg.views.quality import build_quality_summary
 from nkg.views.snapshot_diff import diff_snapshots
-from test_final_delivery import fixture_graph
+from testing_fixtures import fixture_graph
 
 
 class RuntimeTests(unittest.TestCase):
