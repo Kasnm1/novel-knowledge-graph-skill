@@ -6,6 +6,15 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 
+def canonical_bytes(value: Any) -> bytes:
+    """Canonical JSON bytes: the one definition every hash guard and fingerprint uses."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def sha256_value(value: Any) -> str:
+    return hashlib.sha256(canonical_bytes(value)).hexdigest()
+
+
 def sha256_file(path: Path) -> str | None:
     if not path.is_file():
         return None

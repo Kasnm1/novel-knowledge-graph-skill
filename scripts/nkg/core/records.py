@@ -14,6 +14,9 @@ import re
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+# 「第 12 章」 inside prose: the pattern every as-of prose audit looks for.
+CHAPTER_TOKEN = re.compile(r"第\s*(\d+)\s*章")
+
 ENCODINGS = ("utf-8-sig", "utf-8", "gb18030", "big5")
 
 # Chinese numerals as they appear in chapter headings and level labels. The

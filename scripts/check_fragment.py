@@ -28,7 +28,7 @@ from pathlib import Path
 from chapter_audit import check_fragment_audit
 from fragment_extensions import validate_fragment_extensions
 from required_fields import LOSS_ACTIONS
-from nkg.core.records import normalize_text as norm
+from nkg.core.records import CHAPTER_TOKEN, normalize_text as norm
 from nkg.core.records import READER_PROSE_FIELDS
 
 
@@ -43,8 +43,6 @@ SINGLE_ID_FIELDS = (
     "source_id", "target_id", "entity_id", "location_id",
     "cause_event_id", "payoff_event_id", "protagonist_id", "character_id", "item_id",
 )
-
-CHAPTER_TOKEN = re.compile(r"第\s*(\d+)\s*章")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

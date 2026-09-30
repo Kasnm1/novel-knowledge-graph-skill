@@ -47,9 +47,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from asof_names import LateNameIndex
-from nkg.core.records import READER_PROSE_FIELDS
+from nkg.core.records import CHAPTER_TOKEN, READER_PROSE_FIELDS
 
-CHAPTER_TOKEN = re.compile(r"第\s*(\d+)\s*章")
 
 # The fields the panel renders as prose. `quote` is deliberately absent: it is
 # verbatim source text and is never rewritten or withheld.

@@ -81,7 +81,7 @@ CONVERSION_RELATION_ALIASES: dict[str, str] = {
 ENDPOINT_KEYS: tuple[str, ...] = ("axis_id", "value", "label", "range")
 
 # Required on every record.
-REQUIRED_KEYS: tuple[str, ...] = ("id", "chapter", "from", "to", "relation", "description", "evidence_ids")
+CONVERSION_FIELDS: tuple[str, ...] = ("id", "chapter", "from", "to", "relation", "description", "evidence_ids")
 
 
 def canonical_relation(value: object) -> str:

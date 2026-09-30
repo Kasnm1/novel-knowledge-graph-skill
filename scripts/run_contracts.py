@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from io_utils import atomic_write_json
+from nkg.core.cache import canonical_bytes, sha256_file as _sha256_file, sha256_value  # noqa: F401
 
 DERIVED_PROFILE_KEYS = {
     "schema_version", "title", "source", "chapter_range", "validation",
@@ -30,16 +31,11 @@ DERIVED_SNAPSHOT_KEYS = {
 }
 
 
-def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-
-
-def sha256_value(value: Any) -> str:
-    return hashlib.sha256(canonical_bytes(value)).hexdigest()
-
-
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = _sha256_file(path)
+    if digest is None:
+        raise FileNotFoundError(path)
+    return digest
 
 
 def read_object(path: Path) -> dict[str, Any]:

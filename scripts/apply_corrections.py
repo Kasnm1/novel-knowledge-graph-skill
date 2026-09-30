@@ -17,14 +17,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 from io_utils import atomic_write_text
-
-
-def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+from nkg.core.cache import canonical_bytes, sha256_value  # noqa: F401
 
 
 def value_hash(value: Any) -> str:
-    return hashlib.sha256(canonical_bytes(value)).hexdigest()
+    return sha256_value(value)
 
 
 def read_graph(path: Path) -> dict[str, Any]:
