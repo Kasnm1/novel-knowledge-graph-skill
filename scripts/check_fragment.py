@@ -25,6 +25,8 @@ import re
 import sys
 from pathlib import Path
 
+from chapter_audit import check_fragment_audit
+
 LOSS_ACTIONS = {
     "lost", "transferred", "sealed", "forgotten", "left",
     "destroyed", "removed", "broken",
@@ -806,6 +808,10 @@ def main() -> int:
         return 1
 
     known: set[str] = {r.get("id") for r in frag.get("entities", []) if isinstance(r, dict)}
+    # 审计卡要按实体类型判断（在场人物才需要状态确认、等级轴的适用类型）
+    entity_types: dict[str, str] = {
+        r.get("id"): r.get("type") for r in frag.get("entities", []) if isinstance(r, dict)
+    }
     # cause_event_ids / consequence_event_ids / payoff_event_id 指向事件，
     # 事件可以在本文件、兄弟分片或已合并图谱里声明。
     known |= {r.get("id") for r in frag.get("events", []) if isinstance(r, dict)}
@@ -828,6 +834,9 @@ def main() -> int:
             except (json.JSONDecodeError, OSError):
                 continue
             known |= {r.get("id") for r in data.get("entities", []) if isinstance(r, dict)}
+            for r in data.get("entities", []):
+                if isinstance(r, dict):
+                    entity_types.setdefault(r.get("id"), r.get("type"))
             known |= {r.get("id") for r in data.get("events", []) if isinstance(r, dict)}
             state_ids |= {r.get("id") for r in data.get("state_changes", [])
                           if isinstance(r, dict)}
@@ -842,6 +851,9 @@ def main() -> int:
     if args.graph and args.graph.exists():
         graph = json.loads(args.graph.read_text(encoding="utf-8"))
         known |= {r.get("id") for r in graph.get("entities", []) if isinstance(r, dict)}
+        for r in graph.get("entities", []):
+            if isinstance(r, dict):
+                entity_types.setdefault(r.get("id"), r.get("type"))
         known |= {r.get("id") for r in graph.get("events", []) if isinstance(r, dict)}
         state_ids |= {r.get("id") for r in graph.get("state_changes", [])
                       if isinstance(r, dict)}
@@ -899,6 +911,7 @@ def main() -> int:
     check_chapter_summaries(frag, ck, ev_ids, ceiling)
     check_item_roles(frag, ck, ev_ids)
     check_story_arcs(frag, ck, ev_ids, ceiling)
+    check_fragment_audit(frag, entity_types, ev_ids, analyzed, ck.err, ck.warn)
 
     # 计划文件按章段自动匹配，**不要写死文件名**。此前这里硬编码
     # `plan-201-300.json`，于是覆盖 301-400 的分片一个都匹配不上，

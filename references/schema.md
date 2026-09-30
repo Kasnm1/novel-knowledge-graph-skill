@@ -111,6 +111,8 @@ Within one uninterrupted validity episode, one semantic relationship must have e
 
 Each canonical relation has a stable `pair_key` derived from canonicalized endpoints and `relation_type`, plus an `episode_id` when the same semantics end and later resume. `observations` is an append-only list of source restatements or status transitions with `chapter`, `evidence_ids`, and optional `description`, `status`, `valid_from`, and `valid_to`. Coalescing may update the compatibility fields on the relation, but it must retain every non-empty description and status transition in `observations`; a later fragment must never silently overwrite an earlier qualification.
 
+Take `relation_type` from `scripts/relation_types.py` (`RELATION_GROUPS`; each type also names the reader-facing group the dashboard filters by). Audit-protocol-2 fragments must use a canonical type; aliases such as `holds` → `possesses` or `located_at` → `located_in` are rejected with the canonical spelling.
+
 Examples: `parent_of`, `sibling_of`, `teacher_of`, `friend_of`, `rival_of`, `member_of`, `family_member_of`, `sect_member_of`, `school_member_of`, `citizen_of`, `affiliated_with`, `part_of`, `subgroup_of`, `located_in`, `owns`, `uses`, `learned`, `knows_about`, `alter_ego_of`, `disguised_as`.
 
 Use `part_of`, `subgroup_of`, and `located_in` for evidence-backed hierarchy. A family, sect, school, faction, nation, organization, or place may have several parents; no field implies exclusive membership. Use the more specific character membership predicates when the text supports them. `member_of` is the transparent fallback, not a reason to collapse family, school, nation, and faction into one reader-facing group. Direct relations and inherited ancestors are distinguished in derived views, and current versus historical membership follows the relation validity interval.
@@ -133,7 +135,7 @@ Facets include `attribute`, `level`, `skill`, `possession`, `identity`, `title`,
 
 Actions include `gained`, `lost`, `changed`, `transferred`, `upgraded`, `downgraded`, `sealed`, `unsealed`, `damaged`, `repaired`, `learned`, `forgotten`, `joined`, `left`, `revealed`, and `concealed`.
 
-Use `confidence` values `explicit`, `inferred`, or `uncertain`. `before` and `after` may be strings, numbers, booleans, objects, or null, but must not be equal.
+Use `confidence` values `explicit`, `inferred`, or `uncertain`. `before` and `after` must not be equal. Legacy records may hold strings, numbers or booleans; audit-protocol-2 fragments write `null` or `{"value": <number|null>, "label": "<the book's wording>", "note": "<optional explanation>"}` — an explanation such as 「突破筑基后方可修金刚掌」 goes in `note`, never inside `label`, because the label is what every snapshot displays.
 
 ## Level axes
 
@@ -143,7 +145,7 @@ Ranked progression is book-agnostic and must not be modelled as loose prose insi
 
 Required: `id`, `type` (`level_axis`), `name`, `first_chapter`, `evidence_ids`.
 
-Useful optional fields: `aliases`, `summary`, `system_key`, `attributes`, `current_state`, `tags`. `system_key` is a stable book-local identifier for compatibility (for example `cultivation-main`), unchanged when the source later reveals a new label or tier. Put the axis definition in `attributes`, using reader-facing keys so no internal English key reaches the dashboard or the AI text: `{"单位": "级", "下限": 1, "上限": 99, "越高越强": true, "档位": [{"名称": "第一境", "区间": [1, 10]}, {"名称": "第二境", "区间": [11, 20]}]}`. A free-form tier rule that is not a range goes in `分级依据` instead of `档位`. An axis is a world object, so it is created once per book and referenced by every change on it.
+Useful optional fields: `aliases`, `summary`, `system_key`, `applies_to`, `attributes`, `current_state`, `tags`. `applies_to` lists the entity types the ladder governs (`["character"]` for a cultivation realm, `["item"]` for an artifact grade); audit-protocol-2 fragments must declare it, and a level change on an entity of another type is rejected — the defect it prevents is an item's grade recorded on the character who wields it. `system_key` is a stable book-local identifier for compatibility (for example `cultivation-main`), unchanged when the source later reveals a new label or tier. Put the axis definition in `attributes`, using reader-facing keys so no internal English key reaches the dashboard or the AI text: `{"单位": "级", "下限": 1, "上限": 99, "越高越强": true, "档位": [{"名称": "第一境", "区间": [1, 10]}, {"名称": "第二境", "区间": [11, 20]}]}`. A free-form tier rule that is not a range goes in `分级依据` instead of `档位`. An axis is a world object, so it is created once per book and referenced by every change on it.
 
 Before creating an axis for unfamiliar wording, retrieve existing axes and compare `system_key`, governing rule, unit, neighboring tiers, and explicit conversions. If compatible, append the new tier/alias and evidence to the existing axis. Two axes with the same `system_key` are invalid. Create a new axis only when the scale is genuinely incomparable; translations and later-revealed tiers do not create a new system.
 
@@ -306,7 +308,9 @@ Everything else in the graph is indexed by *entity*. A reader moving forward thr
 
 Required: `id`, `chapter`, `summary`, `evidence_ids`.
 
-Optional: `title`, `key_event_ids`, `notable_character_ids`, `tags`, `arc_ids`, `dominant_arc_id`, `narrative_phase`.
+Optional: `title`, `key_event_ids`, `notable_character_ids`, `tags`, `arc_ids`, `dominant_arc_id`, `narrative_phase`, and the audit-card fields `continuity`, `scenes`, `presence`, `narrative`, `audit`.
+
+Under audit protocol 2 the row **is** the chapter's audit card: every checklist item carries a `recorded N` / `none + reason` receipt that `check_fragment.py` holds against the fragment's records. The field shapes and rules live in `chapter-audit-spec.md`.
 
 Write `summary` in three to six sentences covering the chapter's own arc, not a list of names. `title` mirrors `chapters.jsonl` when the source has one — never invent a chapter title. `key_event_ids` points at the `events` recorded for that chapter, which is what keeps a summary attached to the graph instead of floating beside it.
 
@@ -330,7 +334,7 @@ Statuses are `open`, `active`, `paused`, `resolved`, and `uncertain`. Phases are
 
 Required: `id`, `label`, `status`, `planted_chapter`, `observation`, `interpretation`, `related_entity_ids`, `evidence_ids`, `confidence`.
 
-Optional: `progression`, `payoff_chapter`, `payoff_event_id`, `alternative_interpretations`. `progression` entries contain `chapter`, `kind`, `description`, and `evidence_ids`.
+Optional: `kind` (`foreshadowing`, default, or `question` for a suspense question the chapter raises for the reader), `progression`, `payoff_chapter`, `payoff_event_id`, `alternative_interpretations`. `progression` entries contain `chapter`, `kind`, `description`, and `evidence_ids`.
 
 Statuses: `suspected`, `open`, `progressed`, `partially_resolved`, `resolved`, `false_lead`. Prefer `suspected` when authorial intent is uncertain.
 

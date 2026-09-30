@@ -70,6 +70,9 @@ its original length is reported rather than written. Read the preview first.
 
 ## Chapter pass
 
+The passes below are the content of each chapter's audit card. Under audit protocol 2 (`chapter-audit-spec.md`) every narrative chapter answers the full checklist — scenes, presence roster with state checks, events without a cap, every item pass, summary with continuity, narrative function — with a `recorded N` / `none + reason` receipt per item, audited 3–5 chapters per worker.
+
+
 1. Identify entity mentions and aliases. Reuse an established ID only when identity is supported.
 2. Extract pivotal events with participants, location, cause, and consequences.
 3. Record changes rather than static restatements. Prioritize gains, losses, transfers, injuries, learning, sealing, departures, changed loyalties, and new knowledge.
