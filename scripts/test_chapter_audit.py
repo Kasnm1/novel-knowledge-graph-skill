@@ -193,7 +193,8 @@ class ChapterAuditTests(unittest.TestCase):
             text = Path(tmp) / "002.txt"
             text.write_text("甲在镇口拦下乙。\n丙一剑破开第一层。\n", encoding="utf-8")
             index = Path(tmp) / "chapters.jsonl"
-            index.write_text(json.dumps({"chapter": 2, "text_path": str(text)}) + "\n", encoding="utf-8")
+            # a relative text_path resolves against the index directory, wherever the gate runs
+            index.write_text(json.dumps({"chapter": 2, "text_path": text.name}) + "\n", encoding="utf-8")
             script = Path(__file__).resolve().parent / "check_fragment.py"
             ok = subprocess.run([sys.executable, str(script), "--fragment", str(good), "--no-siblings",
                                  "--chapters-jsonl", str(index)],

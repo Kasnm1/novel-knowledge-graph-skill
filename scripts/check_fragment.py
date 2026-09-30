@@ -873,6 +873,9 @@ def main(argv: list[str] | None = None) -> int:
                 cache[ch] = None
             else:
                 p = Path(rec["text_path"])
+                if not p.is_absolute():
+                    # relative to the index, not to wherever the gate is run from
+                    p = args.chapters_jsonl.resolve().parent / p
                 cache[ch] = p.read_text(encoding="utf-8").splitlines() if p.exists() else None
         return cache[ch]
 
