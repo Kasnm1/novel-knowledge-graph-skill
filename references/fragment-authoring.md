@@ -1,5 +1,27 @@
 # Authoring a fragment with a generator script
 
+**Audit-protocol-2 fragments use `scripts/nkg/workflow/authoring.py`.** `FragmentBuilder` numbers
+record IDs with the fragment marker, takes evidence as verbatim quotes and returns deduplicated IDs,
+normalises state values to `{value, label, note}`, and computes every audit-card receipt from the
+records at `build()` — the worker supplies only the reason for each checklist item that has no
+records, and `build()` refuses to finish while one is missing. In the ten-chapter model comparison
+most gate failures were exactly these mechanical slips (one worker needed fifteen gate runs).
+
+```python
+import sys; sys.path.insert(0, "<skill>/scripts")
+from nkg.workflow.authoring import FragmentBuilder
+b = FragmentBuilder("fragment-37", "f37", range(301, 305))   # name and marker from `audit_workflow.py ids --issue-fragment`
+e = b.event(301, "conflict", "镇口对峙", "甲在镇口拦下乙。", ["char_a", "char_b"], "甲在镇口拦下乙。")
+b.state("char_b", "location", "changed", 301, "小镇", "被拦在镇口", "甲在镇口拦下乙。", before="野外")
+b.card(301, summary="…", from_previous="…", sets_up="…", scenes=[…], presence=[…],
+       functions=["setup"], cliffhanger="suspense", pacing="medium", summary_quotes=["…"],
+       none_reasons={"commitments": "本章没有任何许诺", "transactions": "没有金钱往来"})
+b.write(Path("<run>/fragments/fragment-37.json"))
+```
+
+The rest of this page explains the defects a hand-rolled generator must also prevent, and still
+applies to the quote-anchoring helpers.
+
 Read this before writing a fragment by hand. Hand-written JSON for a 100+-field
 document fails in ways that cost more time to diagnose than the script costs to
 write. Measured on `runs/我的狐仙老婆-full/`: one hand-written fragment produced

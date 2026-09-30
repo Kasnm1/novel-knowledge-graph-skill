@@ -79,8 +79,9 @@ cached across calls; only the chapter, context and capsule change.
    change to every present character, anything that might be a clue. Save them as
    `<run>/fragments/notes/<unit>-<chapter>.md`. Writing a hundred-field JSON while
    reading is where beats get compressed and characters dropped.
-2. **Structure the notes** into the fragment with the generator helpers in
-   `fragment-authoring.md`, never as hand-typed JSON.
+2. **Structure the notes** into the fragment with `FragmentBuilder`
+   (`scripts/nkg/workflow/authoring.py`, see `fragment-authoring.md`), never as hand-typed JSON.
+   It numbers IDs, deduplicates evidence and computes the audit receipts for you.
 3. **Fill the audit card last**: every receipt from the records just written, every
    `state_check` answered against the capsule. Then `resolve_evidence.py` and
    `check_fragment.py`; a card that fails is not done.

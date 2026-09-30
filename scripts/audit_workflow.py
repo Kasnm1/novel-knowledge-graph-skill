@@ -84,7 +84,13 @@ def cmd_ids(a) -> int:
         registry.save(a.registry)
         _emit(issued, None)
     else:
-        table = registry.id_table()
+        ids, text = None, None
+        if a.chapters_jsonl:
+            text = "\n".join(r["text"] for r in read_chapter_index(a.chapters_jsonl, a.start, a.end, with_text=True))
+            ids = [entity_id for entity_id in registry.entities
+                   if any(n and len(n) >= 2 and n in text for n in
+                          [registry.entities[entity_id].get("name"), *(registry.entities[entity_id].get("aliases") or [])])]
+        table = registry.id_table(ids, text)
         if a.output:
             atomic_write_text(a.output, table + "\n")
         print(table)
@@ -166,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--issue-fragment", metavar="UNIT")
     p.add_argument("--fragments-dir", type=Path)
     p.add_argument("--output", type=Path, help="write the ID table (default action)")
+    p.add_argument("--chapters-jsonl", type=Path, help="limit the table to entities these chapters name, "
+                                                         "showing the names the text uses there")
+    p.add_argument("--start", type=int)
+    p.add_argument("--end", type=int)
     p.set_defaults(func=cmd_ids)
 
     p = sub.add_parser("plan")

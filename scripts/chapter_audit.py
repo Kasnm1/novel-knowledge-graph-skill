@@ -167,12 +167,18 @@ def check_card(card: dict, frag: dict, entity_types: dict[str, str], evidence_id
             elif check == "confirmed_unchanged" and eid in changed_here:
                 err(f"{tag}: {eid} 标为 confirmed_unchanged，但本章记录了他的状态变化")
 
+    mentioned_only = listed - present
     for ev in _records(frag, "events"):
         if ev.get("chapter") != chapter:
             continue
         missing = [p for p in ev.get("participant_ids") or [] if p not in listed]
         if missing:
             err(f"{tag}: 事件 {ev.get('id')} 的参与者 {missing} 不在出场名册里")
+        absent = [p for p in ev.get("participant_ids") or [] if p in mentioned_only
+                  and entity_types.get(p) == "character"]
+        if absent and "recalled" not in (ev.get("tags") or []):
+            err(f"{tag}: 事件 {ev.get('id')} 的参与者 {absent} 在名册中只是 mentioned；"
+                "不在场的人不能参与事件，回忆或转述请给事件加 tags: [\"recalled\"]")
     for sid in sorted(changed_here - listed):
         if entity_types.get(sid) == "character":
             err(f"{tag}: 人物 {sid} 本章有状态变化，却不在出场名册里")

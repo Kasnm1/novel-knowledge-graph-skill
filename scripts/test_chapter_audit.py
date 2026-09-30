@@ -139,6 +139,23 @@ class ChapterAuditTests(unittest.TestCase):
         errors, _ = run(frag)
         self.assertTrue(any("不在出场名册" in e for e in errors))
 
+    def test_mentioned_character_cannot_take_part_unless_recalled(self) -> None:
+        frag = fragment()
+        card = frag["chapter_summaries"][0]
+        card["presence"][1]["mode"] = "mentioned"          # char_b is only talked about
+        card["presence"][1].pop("state_check")
+        card["scenes"][0]["participant_ids"] = ["char_a"]
+        frag["state_changes"] = [s for s in frag["state_changes"] if s["entity_id"] != "char_b"]
+        counts = item_counts(frag, 2, card)
+        for key in AUDIT_ITEMS:
+            card["audit"][key] = ({"status": "recorded", "count": counts[key]} if counts[key]
+                                  else {"status": "none", "count": 0, "reason": "原文本章没有此类内容"})
+        errors, _ = run(frag)
+        self.assertTrue(any("只是 mentioned" in e for e in errors))
+        frag["events"][0]["tags"] = ["recalled"]
+        errors, _ = run(frag)
+        self.assertFalse(any("只是 mentioned" in e for e in errors))
+
     def test_state_check_must_agree_with_state_changes(self) -> None:
         frag = fragment()
         presence = frag["chapter_summaries"][0]["presence"]

@@ -184,13 +184,15 @@ def check_evidence(
         if not isinstance(quote, str) or not quote.strip():
             ck.err(f"{eid}: 缺少 quote")
             continue
-        if not (15 <= len(quote) <= 60):
-            ck.warn(f"{eid}: quote 长度 {len(quote)}，规范建议 15-60 字")
         lines = lines_of(ch)
+        nq = norm(quote)
+        # a short quote that is the whole source line cannot be made longer
+        whole_line = lines is not None and any(nq and nq == norm(ln) for ln in lines)
+        if not (15 <= len(quote) <= 60) and not (len(quote) < 15 and whole_line):
+            ck.warn(f"{eid}: quote 长度 {len(quote)}，规范建议 15-60 字")
         if lines is None:
             ck.err(f"{eid}: 找不到第 {ch} 章文本")
             continue
-        nq = norm(quote)
         if not any(nq and nq in norm(ln) for ln in lines):
             ck.err(f"{eid}: 第{ch}章单行内找不到引文「{quote[:36]}」")
     return ids

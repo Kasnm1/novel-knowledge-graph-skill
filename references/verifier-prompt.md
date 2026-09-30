@@ -50,6 +50,18 @@ Return JSON only:
 }
 ```
 
+Also return `by_type`, the same counts broken down by record kind, so two verifications
+can be compared kind by kind:
+
+```json
+"by_type": {"events": {"checked": 7, "missed": 1, "wrong": 0},
+            "state_changes": {"checked": 9, "missed": 0, "wrong": 1}}
+```
+
+Before a batch, verify the calibration chapters (a gold set with known answers) the same way;
+the difference between your verdict and the gold answers is your strictness offset, reported
+beside every batch.
+
 `missed` and `wrong` count the issues listed. The extractor gets one correction
 round; what remains after it becomes a `review_issues` entry. `score` turns the
 verdict into the chapter's quality in `coverage-ledger.json`.

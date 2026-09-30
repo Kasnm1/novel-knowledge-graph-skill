@@ -88,6 +88,9 @@ says what the text lacks.
 
 - **Presence is complete.** Every event participant and every character with a state change in the
   chapter is on the roster. Scene participants are `present`; a POV entity is on the roster.
+- **Only present characters take part in events.** A character who is only `mentioned` (dead, elsewhere,
+  talked about) cannot be an event participant unless the event is a recollection or report tagged
+  `tags: ["recalled"]`.
 - **Every present character gets a state check.** `changed` requires a state change for them in this
   chapter; `confirmed_unchanged` forbids one; `not_tracked` is for walk-ons. This is what keeps the
   reader's "as of chapter N" card current: a core character who appears is either updated or

@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 
 import audit_workflow
+from chapter_audit import check_fragment_audit
+from nkg.workflow.authoring import FragmentBuilder
 from nkg.workflow.capsule import build_chapter_capsule
 from nkg.workflow.planner import chapter_density, plan_audit
 from nkg.workflow.quality import chapter_score
@@ -49,6 +51,13 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(reg.claim("character", "秦哥", "qin_ge"), ("char_hero", False))
         self.assertEqual(reg.claim("character", "余倩", "yu_qian", aliases=["倩倩"]), ("char_yu_qian", True))
         self.assertEqual(reg.lookup("倩倩"), ["char_yu_qian"])
+
+    def test_id_table_marks_names_the_text_does_not_use_yet(self):
+        reg = IdRegistry()
+        reg.claim("character", "云谷", "yun_gu", aliases=["师傅", "医圣"])
+        table = reg.id_table(["char_yun_gu"], text="他的师傅一生悬壶济世。")
+        self.assertIn("| 师傅 |", table)
+        self.assertIn("云谷（后文才出现，本段勿写）", table)
 
     def test_bad_slug_duplicate_id_and_ambiguity_raise(self):
         reg = IdRegistry()
@@ -152,6 +161,41 @@ class SurveyTests(unittest.TestCase):
         reg = IdRegistry()
         issued = seed_registry(reg, survey)
         self.assertEqual([i["id"] for i in issued], ["char_qin_chao", "axis_jiuchongtian"])
+
+
+class AuthoringTests(unittest.TestCase):
+    def build(self, reasons):
+        b = FragmentBuilder("fragment-01", "f01", [1])
+        b.entity("char_hero", "character", "秦朝", 1, "秦朝走进大门。")
+        b.entity("char_su", "character", "苏姬", 1, "苏姬抬起头。")
+        e = b.event(1, "encounter", "相遇", "秦朝在门口遇见苏姬。", ["char_hero", "char_su"], "秦朝走进大门。")
+        b.state("char_hero", "location", "changed", 1, "苏南", "走进苏南", "秦朝走进大门。", before="野外")
+        b.card(1, summary="秦朝进城。他遇见苏姬。两人对视良久。", from_previous="开篇", sets_up="苏姬的来历",
+               scenes=[{"location_label": "城门", "participant_ids": ["char_hero", "char_su"], "purpose": "相遇",
+                        "event_ids": [e]}],
+               presence=[{"entity_id": "char_hero", "mode": "present", "role": "进城", "state_check": "changed"},
+                         {"entity_id": "char_su", "mode": "present", "role": "被遇见", "state_check": "confirmed_unchanged"}],
+               functions=["setup"], cliffhanger="suspense", pacing="medium", summary_quotes="苏姬抬起头。",
+               line_quotes="苏姬抬起头。", none_reasons=reasons)
+        return b
+
+    def test_receipts_are_computed_and_the_card_passes(self):
+        reasons = {k: "原文本章没有此类内容" for k in ("levels", "skills_items", "relations", "knowledge", "combat",
+                                                   "transactions", "romance_intimacy", "commitments",
+                                                   "foreshadowing", "traits")}
+        frag = self.build(reasons).build()
+        self.assertEqual(frag["chapter_summaries"][0]["audit"]["events"], {"status": "recorded", "count": 1})
+        self.assertEqual(len(frag["evidence"]), 2)
+        self.assertEqual(frag["state_changes"][0]["before"], {"value": None, "label": "野外"})
+        errors: list[str] = []
+        types = {"char_hero": "character", "char_su": "character"}
+        check_fragment_audit(frag, types, {e["id"] for e in frag["evidence"]}, [1], errors.append, lambda _: None)
+        self.assertEqual(errors, [])
+
+    def test_build_refuses_items_without_records_or_reason(self):
+        with self.assertRaises(ValueError) as ctx:
+            self.build({}).build()
+        self.assertIn("commitments", str(ctx.exception))
 
 
 class CliTests(unittest.TestCase):

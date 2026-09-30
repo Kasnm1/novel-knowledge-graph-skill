@@ -82,6 +82,8 @@ def build_chapter_capsule(graph: Mapping[str, Any], chapter: int, *, text: str |
         rows.append({
             "id": entity_id, "type": entity.get("type"), "name": entity.get("name"),
             "aliases": entity.get("aliases") or [],
+            "names_in_chapter": [n for n in [entity.get("name"), *(entity.get("aliases") or [])]
+                                 if text and isinstance(n, str) and n in text] if text else None,
             "last_seen": {"chapter": last_seen[entity_id][0], "event": last_seen[entity_id][1]} if entity_id in last_seen else None,
             "levels": {axis: _value(v) for axis, v in state["levels"].items()},
             "facets": facets,

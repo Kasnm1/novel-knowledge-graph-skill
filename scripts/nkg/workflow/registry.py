@@ -148,11 +148,28 @@ class IdRegistry:
         self.fragments["next"] = number + 1
         return {"fragment": name, "marker": f"f{number:02d}"}
 
-    def id_table(self, entity_ids: Iterable[str] | None = None) -> str:
-        """A Markdown table for a worker prompt, optionally limited to some IDs."""
+    def id_table(self, entity_ids: Iterable[str] | None = None, text: str | None = None) -> str:
+        """A Markdown table for a worker prompt, optionally limited to some IDs.
+
+        With the unit's chapter `text`, each row shows the names the text actually
+        uses there. A canonical name that the text does not use yet (a name revealed
+        later in the book, like a master known only as 「师傅」 for hundreds of chapters)
+        is marked so the worker reuses the ID without writing the future name into
+        its records.
+        """
         wanted = sorted(self.entities) if entity_ids is None else sorted(set(entity_ids) & set(self.entities))
-        lines = ["| ID | 类型 | 名称 | 别名 |", "|---|---|---|---|"]
+        if text is None:
+            lines = ["| ID | 类型 | 名称 | 别名 |", "|---|---|---|---|"]
+        else:
+            lines = ["| ID | 类型 | 本段原文中的称呼 | 正名 | 其他别名 |", "|---|---|---|---|---|"]
         for entity_id in wanted:
             row = self.entities[entity_id]
-            lines.append(f"| {entity_id} | {row.get('type')} | {row.get('name')} | {'、'.join(row.get('aliases') or [])} |")
+            name, aliases = str(row.get("name") or ""), [a for a in row.get("aliases") or [] if isinstance(a, str)]
+            if text is None:
+                lines.append(f"| {entity_id} | {row.get('type')} | {name} | {'、'.join(aliases)} |")
+                continue
+            used = [n for n in [name, *aliases] if n and n in text]
+            canonical = name if name in text else f"{name}（后文才出现，本段勿写）"
+            others = [a for a in aliases if a not in used]
+            lines.append(f"| {entity_id} | {row.get('type')} | {'、'.join(used) or '—'} | {canonical} | {'、'.join(others)} |")
         return "\n".join(lines)
