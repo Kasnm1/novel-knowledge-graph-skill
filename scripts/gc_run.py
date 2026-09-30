@@ -62,7 +62,7 @@ def describe(path: Path, root: Path) -> dict[str, Any]:
         raise ValueError(f"refusing symlink GC candidate: {path}")
     rel = _relative(path, root)
     if path.is_file():
-        return {"path": str(rel), "kind": "file", "size": path.stat().st_size, "sha256": sha256(path)}
+        return {"path": rel.as_posix(), "kind": "file", "size": path.stat().st_size, "sha256": sha256(path)}
     if not path.is_dir():
         raise ValueError(f"GC candidate is neither file nor directory: {path}")
     files: list[dict[str, Any]] = []
@@ -70,8 +70,8 @@ def describe(path: Path, root: Path) -> dict[str, Any]:
     for file in sorted(_walk_files(path)):
         size = file.stat().st_size
         total += size
-        files.append({"path": str(_relative(file, root)), "size": size, "sha256": sha256(file)})
-    return {"path": str(rel), "kind": "directory", "size": total, "files": files}
+        files.append({"path": _relative(file, root).as_posix(), "size": size, "sha256": sha256(file)})
+    return {"path": rel.as_posix(), "kind": "directory", "size": total, "files": files}
 
 
 def _raw_candidates(root: Path) -> list[Path]:
@@ -110,7 +110,7 @@ def build_plan(root: Path, archive: Path) -> dict[str, Any]:
     operations = [
         {
             "source": row["path"],
-            "destination": str((archive / row["path"]).relative_to(root)),
+            "destination": (archive / row["path"]).relative_to(root).as_posix(),
             "fingerprint": row,
             "status": "planned",
         }
@@ -141,7 +141,7 @@ def _file_map(path: Path) -> dict[str, tuple[int, str]]:
         return {}
     result: dict[str, tuple[int, str]] = {}
     for file in _walk_files(path):
-        rel = str(file.relative_to(path))
+        rel = file.relative_to(path).as_posix()
         result[rel] = (file.stat().st_size, sha256(file))
     return result
 
