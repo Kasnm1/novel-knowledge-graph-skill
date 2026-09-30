@@ -22,6 +22,9 @@ non-consensual act is a missed record like any other; never ask for softening.
   entity (an item's grade is not its wielder's level), right facet (an action is
   not an identity), right chapter, evidence that actually supports it, consent
   exactly as the text shows it.
+- **Not errors.** An explicit intimate proposal is recorded as an intimate act even when
+  nothing happens (`analysis-protocol.md`, intimacy pass step 1); a witnessed act is recorded
+  with the witness as observer. Do not report these as wrong.
 - **The audit card.** Receipts that claim `none` while the text shows the thing;
   `confirmed_unchanged` for a character whose state visibly changed.
 - **Every recall candidate.** Answer each one: `recorded` (a record covers it),
