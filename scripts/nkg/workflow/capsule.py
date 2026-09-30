@@ -42,9 +42,19 @@ def _recent(rows: list[dict[str, Any]], key: str, limit: int) -> list[dict[str, 
     return sorted(rows, key=lambda r: r.get(key) or 0, reverse=True)[:limit]
 
 
+def profile_focus(profile: Mapping[str, Any] | None) -> list[dict[str, str]]:
+    """The checklist items a book profile asks to read with extra care (`book-profile.json` → focus)."""
+    from chapter_audit import AUDIT_ITEMS
+    keys = (profile or {}).get("focus") or []
+    unknown = [k for k in keys if k not in AUDIT_ITEMS]
+    if unknown:
+        raise ValueError(f"book-profile focus names unknown checklist items: {unknown}")
+    return [{"item": k, "label": AUDIT_ITEMS[k]} for k in keys]
+
+
 def build_chapter_capsule(graph: Mapping[str, Any], chapter: int, *, text: str | None = None,
                           candidate_ids: Iterable[str] = (), max_entities: int = 40,
-                          max_threads: int = 15) -> dict[str, Any]:
+                          max_threads: int = 15, profile: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """State as of chapter-1 for the entities chapter `chapter` is likely to involve."""
     as_of = max(chapter - 1, 0)
     closed = filter_graph(dict(graph), as_of, strict=False)
@@ -119,6 +129,7 @@ def build_chapter_capsule(graph: Mapping[str, Any], chapter: int, *, text: str |
         "previous_chapter_summary": previous.get("summary") if previous else None,
         "entities": rows,
         "open_threads": open_threads,
+        "focus": profile_focus(profile),
         "obligations": "For every present character, answer each state_check facet in the audit card: "
                        "record a change, or mark confirmed_unchanged. Close any relation, route or thread this chapter ends.",
     }

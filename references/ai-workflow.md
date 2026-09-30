@@ -154,10 +154,24 @@ It fails when any record kind falls below the recall floor or below the previous
 
 ## 9. Book profile focus
 
-`book-profile.json` may declare the genre and what deserves extra depth (levels
-and artifacts for cultivation, identity and wealth for urban stories, routes and
-intimacy for harem stories). The profile changes how closely each checklist item
-is read; it never removes an item or its receipt.
+`book-profile.json` may declare the genre and what deserves extra depth as checklist
+keys, e.g. `{"genre": "xianxia", "focus": ["levels", "skills_items", "combat"]}` (urban:
+`transactions`, `state_check`; harem: `romance_intimacy`). `capsule --profile` flags those
+items in every capsule. The profile changes how closely an item is read; it never removes an
+item or its receipt.
+
+## 12. Backfilling an audited run
+
+A run audited under the old process is deepened, not re-extracted:
+
+```bash
+python scripts/audit_workflow.py backfill-plan --graph <run>/graph.json --chapters-jsonl <run>/chapters.jsonl --count 50 --output <run>/plan.json
+```
+
+It ranks chapters by recall gaps and thinness (`audit_chapter_depth.py`), takes the thinnest
+N, and keeps consecutive picks in one lane. `status` / `next` then run it like any plan; workers
+write delta fragments on top of the existing records. `quality-series` turns
+`coverage-ledger.json` into the per-chapter completeness band the reader shows on the chapter axis.
 
 ## 10. Reconcile across chapters
 

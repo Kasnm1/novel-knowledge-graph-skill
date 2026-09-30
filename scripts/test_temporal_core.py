@@ -114,6 +114,13 @@ class TemporalCoreTests(unittest.TestCase):
         self.assertEqual(stance(3), "warm")
         self.assertEqual(stance(7), "contempt")
 
+    def test_leak_report_finds_future_names_in_either_alias_map_shape(self):
+        from asof_names import flatten_alias_chapters, leak_report
+        self.assertEqual(flatten_alias_chapters({"小甲": 3, "hero": {"甲哥": 6}}), {"小甲": 3, "甲哥": 6})
+        leaks = leak_report({"AI_CORE.md": "甲哥来了。"}, graph(), 4)
+        self.assertEqual(leaks, {"AI_CORE.md": ["甲哥"]})
+        self.assertEqual(leak_report({"AI_CORE.md": "小甲来了。"}, graph(), 4), {})
+
     def test_canonical_graph_is_not_mutated(self):
         g = graph()
         before = copy.deepcopy(g)

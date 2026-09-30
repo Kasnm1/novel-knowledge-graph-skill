@@ -15,6 +15,8 @@
   reconcile-apply  reviewer decisions → guarded corrections.jsonl lines and --id-map lines
   editorial-check  validate editorial.json (arcs, tiers, dated headlines, recaps)
   editorial-apply  arcs → supplementary fragment; judgments → display-hints.json
+  backfill-plan    re-audit only the thinnest N chapters of an audited run
+  quality-series   per-chapter audit completeness for the reader's chapter axis
 """
 from __future__ import annotations
 
@@ -26,11 +28,11 @@ from pathlib import Path
 from io_utils import atomic_write_json, atomic_write_text
 from nkg.core.records import read_chapter_index
 from nkg.workflow.capsule import build_chapter_capsule
-from nkg.workflow.planner import plan_audit
+from nkg.workflow.planner import backfill_plan, plan_audit
 from nkg.workflow.editorial import editorial_outputs, validate_editorial
 from nkg.workflow.reconcile import decisions_to_corrections, reconcile_candidates
 from nkg.workflow.progress import init_state, load_state, ready_units, save_state, summary, update_unit
-from nkg.workflow.quality import card_complete, chapter_score, update_ledger
+from nkg.workflow.quality import card_complete, chapter_score, quality_series, update_ledger
 from nkg.workflow.recall import apply_verdicts, recall_candidates
 from nkg.workflow.registry import AmbiguousName, IdRegistry, RegistryError
 from nkg.workflow.survey import build_scaffold, seed_registry, validate_survey
@@ -124,7 +126,8 @@ def cmd_capsule(a) -> int:
     if a.chapters_jsonl:
         row = next((r for r in read_chapter_index(a.chapters_jsonl, a.chapter, a.chapter, with_text=True)), None)
         text = row.get("text") if row else None
-    capsule = build_chapter_capsule(graph, a.chapter, text=text, candidate_ids=a.entity)
+    profile = _json(a.profile) if a.profile else None
+    capsule = build_chapter_capsule(graph, a.chapter, text=text, candidate_ids=a.entity, profile=profile)
     _emit(capsule, a.output)
     return 0
 
@@ -254,6 +257,28 @@ def cmd_editorial_apply(a) -> int:
     return 0
 
 
+def cmd_backfill_plan(a) -> int:
+    from audit_chapter_depth import per_chapter
+    graph = _json(a.graph)
+    rows = read_chapter_index(a.chapters_jsonl, with_text=True)
+    depth = per_chapter(graph, {r["chapter"]: r["text"] for r in rows if "text" in r}, 3)
+    plan = backfill_plan(rows, depth, count=a.count, target_chars=a.target_chars, max_chapters=a.max_chapters)
+    atomic_write_json(a.output, plan)
+    _emit(plan["summary"], None)
+    return 0
+
+
+def cmd_quality_series(a) -> int:
+    series = quality_series(_json(a.ledger))
+    if a.output:
+        atomic_write_json(a.output, series)
+    grades: dict[str, int] = {}
+    for row in series:
+        grades[row["grade"]] = grades.get(row["grade"], 0) + 1
+    _emit({"chapters": len(series), "grades": grades}, None)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -305,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--chapter", required=True, type=int)
     p.add_argument("--chapters-jsonl", type=Path, help="to detect who the chapter mentions")
     p.add_argument("--entity", action="append", default=[], help="force-include an entity ID")
+    p.add_argument("--profile", type=Path, help="book-profile.json; its focus items are flagged for extra care")
     p.add_argument("--output", type=Path)
     p.set_defaults(func=cmd_capsule)
 
@@ -370,6 +396,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--graph", required=True, type=Path)
     p.add_argument("--run-dir", required=True, type=Path)
     p.set_defaults(func=cmd_editorial_apply)
+
+    p = sub.add_parser("backfill-plan")
+    p.add_argument("--graph", required=True, type=Path)
+    p.add_argument("--chapters-jsonl", required=True, type=Path)
+    p.add_argument("--count", type=int, default=50)
+    p.add_argument("--target-chars", type=int, default=10_000)
+    p.add_argument("--max-chapters", type=int, default=5)
+    p.add_argument("--output", required=True, type=Path, help="plan.json for status/next")
+    p.set_defaults(func=cmd_backfill_plan)
+
+    p = sub.add_parser("quality-series")
+    p.add_argument("--ledger", required=True, type=Path)
+    p.add_argument("--output", type=Path)
+    p.set_defaults(func=cmd_quality_series)
 
     args = ap.parse_args(argv)
     return args.func(args)

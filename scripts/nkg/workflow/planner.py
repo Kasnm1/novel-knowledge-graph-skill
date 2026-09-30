@@ -161,3 +161,40 @@ def split_balanced(sizes: list[int], count: int) -> list[int]:
     if result is None:
         raise ValueError("no contiguous split found")
     return result[1]
+
+
+def backfill_plan(chapter_rows: Iterable[Mapping[str, Any]], depth_rows: Iterable[Mapping[str, Any]], *, count: int,
+                  target_chars: int = 10_000, max_chapters: int = 5) -> dict[str, Any]:
+    """A plan that re-audits only the `count` thinnest chapters of an audited run.
+
+    Chapters are ranked by `audit_chapter_depth` rows: recall gaps first, then few
+    events, then no state change. Consecutive picks share a lane so their units still
+    run in order and hand state forward; separate stretches run in parallel.
+    """
+    def thinness(row: Mapping[str, Any]) -> tuple:
+        gaps = len(row.get("text_named_without_record") or row.get("summary_named_without_record") or [])
+        return (-gaps, row.get("events", 0), row.get("state_changes", 0), row["chapter"])
+    story = [r for r in depth_rows if not r.get("non_narrative")]
+    picked = sorted(r["chapter"] for r in sorted(story, key=thinness)[:count])
+    by_chapter = {r["chapter"]: dict(r) for r in chapter_rows}
+    runs: list[list[int]] = []
+    for chapter in picked:
+        if runs and chapter == runs[-1][-1] + 1:
+            runs[-1].append(chapter)
+        else:
+            runs.append([chapter])
+    lanes, units = [], []
+    for lane_no, run in enumerate(runs, 1):
+        sub = plan_audit([by_chapter[c] for c in run if c in by_chapter], lane_chapters=len(run),
+                         target_chars=target_chars, max_chapters=max_chapters, densities={})
+        lane_id = f"B{lane_no:02d}"
+        rename = {u["unit"]: f"{lane_id}-U{n:02d}" for n, u in enumerate(sub["units"], 1)}
+        for unit in sub["units"]:
+            unit.update(unit=rename[unit["unit"]], lane=lane_id,
+                        depends_on=rename.get(unit["depends_on"]) if unit["depends_on"] else None)
+            units.append(unit)
+        lanes.append({"lane": lane_id, "arc_id": None, "chapter_start": run[0], "chapter_end": run[-1],
+                      "checkpoint_chapter": run[0] - 1, "units": [rename[u] for u in rename]})
+    return {"schema": "audit-plan/v1", "mode": "backfill", "parameters": {"count": count, "target_chars": target_chars,
+            "max_chapters": max_chapters}, "lanes": lanes, "units": units,
+            "summary": {"chapters": len(picked), "lanes": len(lanes), "units": len(units), "picked": picked}}

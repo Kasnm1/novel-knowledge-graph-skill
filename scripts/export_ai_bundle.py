@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import importlib
 import json
+import sys
 import re
 from copy import deepcopy
 from pathlib import Path
@@ -23,6 +24,7 @@ from required_fields import ARRAY_KINDS
 from validate_style_observations import validate_style_observations
 from nkg.core.records import chapter_of as _chapter_of
 import export_ai_context
+from asof_names import leak_report
 
 LINE_RE = re.compile(r"(?:(?:原文)?第\s*\d+\s*(?:[—–-]\s*\d+\s*)?行|\b(?:source[ _-]?)?lines?\s*\d+(?:\s*[-–—]\s*\d+)?)", re.IGNORECASE)
 GROUPS = tuple(ARRAY_KINDS)
@@ -325,6 +327,15 @@ def main(argv: list[str] | None = None) -> int:
         "source_validation_record_counts": validation.get("record_counts", {}),
     }
     write(out / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True))
+    if args.cutoff is not None:
+        # spoiler gate: no exported module may name something the reader meets only after the cutoff
+        leaks = leak_report({p: (out / p).read_text(encoding="utf-8") for p in files if p.endswith(".md")},
+                            json.loads(args.graph.read_text(encoding="utf-8")), args.cutoff)
+        if leaks:
+            write(out / "LEAKS.json", json.dumps(leaks, ensure_ascii=False, indent=2))
+            print(f"ERROR: {sum(len(v) for v in leaks.values())} future names in {len(leaks)} modules; see LEAKS.json",
+                  file=sys.stderr)
+            return 1
     return 0
 
 

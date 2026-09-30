@@ -44,6 +44,14 @@ def chapter_score(*, card: bool, recall_open: int, recall_missed: int,
             "verifier": dict(verifier) if verifier else None}
 
 
+def quality_series(ledger: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Per-chapter score and grade in chapter order: the reader's audit-completeness band."""
+    return [{"chapter": r.get("chapter"), "score": (r.get("quality") or {}).get("score"),
+             "grade": (r.get("quality") or {}).get("grade", "unscored"),
+             "verified": bool((r.get("quality") or {}).get("verified"))}
+            for r in sorted(records(ledger.get("chapters")), key=lambda r: r.get("chapter") or 0)]
+
+
 def update_ledger(ledger_path: Path, chapter: int, quality: Mapping[str, Any]) -> dict[str, Any]:
     """Write one chapter's quality into coverage-ledger.json, keeping other fields."""
     from io_utils import atomic_write_json

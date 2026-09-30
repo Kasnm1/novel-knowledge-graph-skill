@@ -153,6 +153,26 @@ def leaked_late_names(
     return hits
 
 
+def flatten_alias_chapters(mapping: object) -> dict[str, int]:
+    """Accept both alias-map shapes: flat {alias: chapter} and nested {entity_id: {alias: chapter}}."""
+    flat: dict[str, int] = {}
+    if not isinstance(mapping, dict):
+        return flat
+    for key, value in mapping.items():
+        items = value.items() if isinstance(value, dict) else [(key, value)]
+        for alias, chapter in items:
+            if isinstance(chapter, int) and not isinstance(chapter, bool):
+                flat[alias] = min(chapter, flat.get(alias, chapter))
+    return flat
+
+
+def leak_report(texts: dict[str, str], graph: dict, as_of: int) -> dict[str, list[str]]:
+    """Late names found in exported texts (path -> names); empty when the export is closed."""
+    index = LateNameIndex(graph.get("entities") or [],
+                          flatten_alias_chapters((graph.get("metadata") or {}).get("alias_first_chapter")), as_of)
+    return {path: hits for path, text in texts.items() if (hits := index.hits(text))}
+
+
 class LateNameIndex:
     """一次快照一份，供渲染器与审计脚本共用。
 

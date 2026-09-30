@@ -12,8 +12,8 @@ from nkg.workflow.progress import init_state, ready_units, summary, update_unit
 from chapter_audit import check_fragment_audit
 from nkg.workflow.authoring import FragmentBuilder
 from nkg.workflow.capsule import build_chapter_capsule
-from nkg.workflow.planner import chapter_density, plan_audit
-from nkg.workflow.quality import chapter_score
+from nkg.workflow.planner import backfill_plan, chapter_density, plan_audit
+from nkg.workflow.quality import chapter_score, quality_series
 from nkg.workflow.recall import apply_verdicts, recall_candidates
 from nkg.workflow.registry import AmbiguousName, IdRegistry, RegistryError
 from nkg.workflow.survey import build_scaffold, seed_registry, validate_survey
@@ -237,6 +237,30 @@ class ProgressAndCompareTests(unittest.TestCase):
         self.assertEqual(report["kinds"]["events"]["only_b"], ["g2"])
         failures = compare_fragments.gold_gate(report, min_recall=0.8)
         self.assertEqual(failures, ["events: recall 0.50 < 0.80"])
+
+
+class BackfillFocusSeriesTests(unittest.TestCase):
+    def test_backfill_picks_thinnest_chapters_and_keeps_runs_in_one_lane(self):
+        rows = [{"chapter": c, "char_count": 3000} for c in range(1, 11)]
+        depth = [{"chapter": c, "events": 3, "state_changes": 2, "summary_named_without_record": []} for c in range(1, 11)]
+        for c in (4, 5, 9):
+            depth[c - 1].update(events=0, state_changes=0)
+        plan = backfill_plan(rows, depth, count=3)
+        self.assertEqual(plan["summary"]["picked"], [4, 5, 9])
+        self.assertEqual([(l["chapter_start"], l["chapter_end"]) for l in plan["lanes"]], [(4, 5), (9, 9)])
+
+    def test_capsule_flags_profile_focus_and_rejects_unknown_items(self):
+        cap = build_chapter_capsule(graph(), 3, text="秦朝", profile={"focus": ["levels", "combat"]})
+        self.assertEqual([f["item"] for f in cap["focus"]], ["levels", "combat"])
+        with self.assertRaises(ValueError):
+            build_chapter_capsule(graph(), 3, text="秦朝", profile={"focus": ["vibes"]})
+
+    def test_quality_series_orders_and_marks_unscored(self):
+        ledger = {"chapters": [{"chapter": 2, "quality": {"score": 90, "grade": "good", "verified": True}},
+                               {"chapter": 1}]}
+        self.assertEqual(quality_series(ledger), [
+            {"chapter": 1, "score": None, "grade": "unscored", "verified": False},
+            {"chapter": 2, "score": 90, "grade": "good", "verified": True}])
 
 
 class CliTests(unittest.TestCase):
