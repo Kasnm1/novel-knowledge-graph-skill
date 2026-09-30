@@ -203,7 +203,7 @@ class MergeAndBuildAuditTests(unittest.TestCase):
             graph = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(graph["relations"][0]["valid_to"], 4)
             self.assertEqual(len(graph["commitments"]), 1)
-            self.assertEqual(graph["metadata"]["merge_engine"], "expanded-subprocess-v2")
+            self.assertEqual(graph["metadata"]["merge_engine"], "compat-alias")
 
     def test_build_step_timeout_is_recorded(self):
         manifest = {"steps": []}

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Fold every multiply-declared entity's `summary` into the fragment that declares it last.
 
+Migration tool only: `merge_graph.py` now keeps differing summaries as dated
+`summary_history` rows, so new runs do not need this pass.
+
 `merge_value` keeps the **last** input for any non-list, non-dict field, so when
 several passes each declare the same entity with a complementary `summary` the
 merge silently keeps only the final pass's paragraph and reports **no conflict**.

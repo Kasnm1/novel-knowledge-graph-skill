@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Consolidate romance routes that parallel extraction passes declared separately.
 
+Migration tool only for routes declared under different IDs: `merge_graph.py` now
+keeps the most advanced status when one route ID is restated.
+
 Ten passes each mint their own `romance_routes` entry for the same pair — the
 我的美女老师 run had nine routes for 苏姬 alone — while the schema wants one route
 per pair carrying dated milestones. Doing this with `--id-map` looks right and is

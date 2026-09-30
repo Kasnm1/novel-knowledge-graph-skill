@@ -16,7 +16,7 @@ from event_types import canonicalize_event_types
 from intimacy_types import canonicalize_intimate_acts
 from character_traits import canonical_facet, sort_traits
 from level_conversions import canonicalize_level_conversions
-from relation_types import SYMMETRIC_RELATION_TYPES
+from relation_types import SYMMETRIC_RELATION_TYPES, canonical_relation_type
 from io_utils import atomic_write_json
 from required_fields import ARRAY_KINDS
 
@@ -69,6 +69,72 @@ def merge_value(left, right, field: str):
     if field in {"last_chapter", "valid_to", "payoff_chapter", "resolved_chapter"} and isinstance(left, int) and isinstance(right, int):
         return max(left, right)
     return deepcopy(right)
+
+
+# Entity prose that changes as the story goes on. Two fragments declaring the
+# same entity with different text used to keep only the last one, silently; the
+# earlier paragraph now survives as a dated history row that as-of views select.
+PROSE_HISTORY_FIELDS = ("summary", "description")
+
+# Romance status order when fragments disagree: the most advanced evidenced stage
+# wins instead of whichever fragment happened to be merged last.
+ROMANCE_STATUS_RANK = {
+    "excluded_nonromantic": -1, "accidental_or_contextual": 0, "coerced_or_forced": 0, "ended": 1,
+    "uncertain": 2, "provisional_intimate": 3, "one_sided": 3, "ambiguous": 3, "mutual_interest": 4,
+    "betrothed": 5, "spouse": 6, "confirmed_relationship": 6,
+}
+
+
+def fragment_start(meta: dict) -> int | None:
+    """The first chapter a fragment covers, or None for a supplementary fragment."""
+    declared = meta.get("analyzed_chapters")
+    if isinstance(declared, list) and any(isinstance(c, int) for c in declared):
+        return min(c for c in declared if isinstance(c, int))
+    span = meta.get("chapter_range")
+    if isinstance(span, list) and len(span) == 2 and all(isinstance(c, int) for c in span):
+        return min(span)
+    start = meta.get("chapter_start")
+    return start if isinstance(start, int) else None
+
+
+def _blank(value) -> bool:
+    return value is None or value == "" or value == [] or value == {}
+
+
+def merge_entity_prose(existing: dict, incoming: dict, first_seen: int | None, start: int | None) -> dict:
+    """Fold differing summaries/descriptions into `<field>_history` rows.
+
+    Returns a copy of `incoming` whose prose fields no longer overwrite blindly:
+    the current value becomes the one with the latest start chapter, and every
+    distinct text is kept once with the chapter its fragment began at.
+    """
+    incoming = deepcopy(incoming)
+    for field in PROSE_HISTORY_FIELDS:
+        old, new = existing.get(field), incoming.get(field)
+        if _blank(new) or _blank(old) or old == new or start is None:
+            continue
+        history_key = f"{field}_history"
+        history = existing.get(history_key)
+        if not isinstance(history, list) or not history:
+            history = [{"valid_from": first_seen, field: old}] if first_seen is not None else []
+        texts = {row.get(field) for row in history if isinstance(row, dict)}
+        if new not in texts:
+            history.append({"valid_from": start, field: new})
+        history.sort(key=lambda row: (row.get("valid_from") is None, row.get("valid_from") or 0))
+        existing[history_key] = history
+        incoming.pop(history_key, None)
+        dated = [row for row in history if isinstance(row.get("valid_from"), int)]
+        incoming[field] = dated[-1][field] if dated else new
+    return incoming
+
+
+def scalar_overrides(existing: dict, incoming: dict) -> list[str]:
+    """Top-level string fields a later fragment rewrites with different text."""
+    return [
+        field for field, value in incoming.items()
+        if isinstance(value, str) and value and isinstance(existing.get(field), str)
+        and existing[field] and existing[field] != value and field not in PROSE_HISTORY_FIELDS and field != "status"
+    ]
 
 
 def merge_record(left: dict, right: dict) -> dict:
@@ -200,7 +266,7 @@ def coalesce_relations(records: list[dict]) -> tuple[list[dict], dict[str, str]]
     return result, canonicalization
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
@@ -208,7 +274,7 @@ def main() -> int:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--manifest", type=Path, help="Prepared source manifest used to lock provenance")
     parser.add_argument("--id-map", action="append", default=[], metavar="OLD=NEW", help="Canonicalize an entity or record ID before merging; repeat as needed")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     id_mapping: dict[str, str] = {}
     for item in args.id_map:
@@ -229,6 +295,8 @@ def main() -> int:
 
     merged = {"metadata": {}, **{name: [] for name in ARRAYS}}
     conflicts = []
+    overrides: list[dict] = []
+    first_seen: dict[str, int | None] = {}
     indexes = {name: {} for name in ARRAYS}
     metadata_notes: list = []
     analyzed: set[int] = set()
@@ -248,6 +316,7 @@ def main() -> int:
 
     for path, fragment in fragments:
         meta = fragment.get("metadata", {})
+        start = fragment_start(meta) if isinstance(meta, dict) else None
         if isinstance(meta, dict):
             absorb_coverage(meta)
         raw_notes = meta.get("notes") if isinstance(meta, dict) else None
@@ -271,11 +340,21 @@ def main() -> int:
                 existing = indexes[name].get(record_id)
                 if existing is None:
                     indexes[name][record_id] = deepcopy(record)
+                    if name == "entities":
+                        first_seen[record_id] = start
                     continue
                 if name in STRICT_KINDS and existing != record:
                     conflicts.append({"kind": name, "id": record_id, "file": str(path), "issue": "incompatible duplicate"})
                     continue
-                indexes[name][record_id] = merge_record(existing, record)
+                incoming = record
+                if name == "entities":
+                    incoming = merge_entity_prose(existing, record, first_seen.get(record_id), start)
+                if name == "romance_routes" and not _blank(existing.get("status")) and not _blank(record.get("status")):
+                    if ROMANCE_STATUS_RANK.get(existing["status"], -2) > ROMANCE_STATUS_RANK.get(record["status"], -2):
+                        incoming = {**incoming, "status": existing["status"]}
+                for field in scalar_overrides(existing, incoming):
+                    overrides.append({"kind": name, "id": record_id, "field": field, "file": path.name})
+                indexes[name][record_id] = merge_record(existing, incoming)
 
     for name in ARRAYS:
         merged[name] = list(indexes[name].values())
@@ -307,6 +386,13 @@ def main() -> int:
     merged["intimate_acts"], intimacy_notes = canonicalize_intimate_acts(merged["intimate_acts"])
     merged["level_conversions"], conversion_notes = canonicalize_level_conversions(merged["level_conversions"])
     merged["character_traits"], trait_notes = canonicalize_character_traits(merged.get("character_traits") or [])
+    relation_type_notes: list[str] = []
+    for record in merged["relations"]:
+        raw = record.get("relation_type")
+        canonical = canonical_relation_type(raw)
+        if canonical != raw:
+            record["relation_type"] = canonical
+            relation_type_notes.append(f"{record.get('id')}：关系类型 {raw} → {canonical}")
     merged["relations"], relation_canonicalization = coalesce_relations(merged["relations"])
     if relation_canonicalization:
         for name in ARRAYS:
@@ -325,6 +411,8 @@ def main() -> int:
         "fragments": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path, _ in fragments},
     }
     merged["metadata"]["merge_conflicts"] = conflicts
+    # Not conflicts — a later pass may legitimately reword a field — but never silent.
+    merged["metadata"]["merge_overrides"] = {"count": len(overrides), "sample": overrides[:50]}
     try:
         from record_skill_version import aggregate_fingerprint, skill_files
 
@@ -339,6 +427,7 @@ def main() -> int:
     merged["metadata"]["relation_canonicalization"] = relation_canonicalization
     merged["metadata"]["attribute_canonicalization"] = attribute_notes
     merged["metadata"]["event_type_canonicalization"] = event_type_notes
+    merged["metadata"]["relation_type_canonicalization"] = relation_type_notes
     merged["metadata"]["intimacy_act_canonicalization"] = intimacy_notes
     merged["metadata"]["character_trait_canonicalization"] = trait_notes
     merged["metadata"]["level_conversion_canonicalization"] = conversion_notes
@@ -373,6 +462,8 @@ def main() -> int:
         "attributes_canonicalized": attribute_notes,
         "aliases_canonicalized": alias_notes,
         "event_types_canonicalized": event_type_notes,
+        "relation_types_canonicalized": relation_type_notes,
+        "scalar_overrides": len(overrides),
         "intimacy_acts_canonicalized": intimacy_notes,
         "character_traits_canonicalized": trait_notes,
         "level_conversions_canonicalized": conversion_notes,
