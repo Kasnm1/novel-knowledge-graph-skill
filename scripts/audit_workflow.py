@@ -11,6 +11,10 @@
   status           unit states, lane progress and the token ledger (audit-state.json)
   next             claim ready units: fragment name, marker and first-chapter capsule
   update           record a unit's status, gate runs, verifier rounds and tokens
+  reconcile-candidates  cross-chapter candidates for an AI reviewer (payoffs, closures, merges …)
+  reconcile-apply  reviewer decisions → guarded corrections.jsonl lines and --id-map lines
+  editorial-check  validate editorial.json (arcs, tiers, dated headlines, recaps)
+  editorial-apply  arcs → supplementary fragment; judgments → display-hints.json
 """
 from __future__ import annotations
 
@@ -23,6 +27,8 @@ from io_utils import atomic_write_json, atomic_write_text
 from nkg.core.records import read_chapter_index
 from nkg.workflow.capsule import build_chapter_capsule
 from nkg.workflow.planner import plan_audit
+from nkg.workflow.editorial import editorial_outputs, validate_editorial
+from nkg.workflow.reconcile import decisions_to_corrections, reconcile_candidates
 from nkg.workflow.progress import init_state, load_state, ready_units, save_state, summary, update_unit
 from nkg.workflow.quality import card_complete, chapter_score, update_ledger
 from nkg.workflow.recall import apply_verdicts, recall_candidates
@@ -197,6 +203,57 @@ def cmd_update(a) -> int:
     return 0
 
 
+def cmd_reconcile_candidates(a) -> int:
+    candidates = reconcile_candidates(_json(a.graph), window=a.window)
+    if a.output:
+        atomic_write_json(a.output, {"candidates": candidates})
+    kinds: dict[str, int] = {}
+    for c in candidates:
+        kinds[c["kind"]] = kinds.get(c["kind"], 0) + 1
+    _emit({"candidates": len(candidates), "by_kind": kinds}, None)
+    return 0
+
+
+def cmd_reconcile_apply(a) -> int:
+    graph = _json(a.graph)
+    candidates = _json(a.candidates)["candidates"]
+    decisions = _json(a.decisions)
+    decisions = decisions.get("decisions", decisions) if isinstance(decisions, dict) else decisions
+    result = decisions_to_corrections(graph, candidates, decisions, reviewer=a.reviewer)
+    if result["corrections"]:
+        with a.corrections.open("a", encoding="utf-8") as stream:
+            for line in result["corrections"]:
+                stream.write(json.dumps(line, ensure_ascii=False) + "\n")
+    if result["id_map"] and a.id_map:
+        with a.id_map.open("a", encoding="utf-8") as stream:
+            stream.write("".join(line + "\n" for line in result["id_map"]))
+    _emit({"corrections": len(result["corrections"]), "id_map": result["id_map"], "skipped": result["skipped"]}, None)
+    return 0
+
+
+def cmd_editorial_check(a) -> int:
+    errors = validate_editorial(_json(a.editorial), _json(a.graph))
+    _emit({"valid": not errors, "errors": errors}, None)
+    return 1 if errors else 0
+
+
+def cmd_editorial_apply(a) -> int:
+    graph, editorial = _json(a.graph), _json(a.editorial)
+    errors = validate_editorial(editorial, graph)
+    if errors:
+        _emit({"valid": False, "errors": errors}, None)
+        return 1
+    registry = IdRegistry.load(a.run_dir / "ids.json")
+    issued = registry.issue_fragment("editorial", a.run_dir / "fragments")
+    frag, hints = editorial_outputs(editorial, graph, fragment=issued["fragment"], marker=issued["marker"])
+    atomic_write_json(a.run_dir / "fragments" / f"{issued['fragment']}.json", frag)
+    atomic_write_json(a.run_dir / "display-hints.json", hints)
+    registry.save(a.run_dir / "ids.json")
+    _emit({"fragment": issued["fragment"], "arcs": len(frag["story_arcs"]),
+           "chapters_with_arcs": len(frag["chapter_summaries"]), "profiles": len(hints["profiles"])}, None)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -287,6 +344,32 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--tokens-verify", type=int)
     p.add_argument("--note")
     p.set_defaults(func=cmd_update)
+
+    p = sub.add_parser("reconcile-candidates")
+    p.add_argument("--graph", required=True, type=Path)
+    p.add_argument("--window", type=int, default=200, help="chapters after a clue/promise to search")
+    p.add_argument("--output", type=Path)
+    p.set_defaults(func=cmd_reconcile_candidates)
+
+    p = sub.add_parser("reconcile-apply")
+    p.add_argument("--graph", required=True, type=Path)
+    p.add_argument("--candidates", required=True, type=Path)
+    p.add_argument("--decisions", required=True, type=Path)
+    p.add_argument("--corrections", required=True, type=Path, help="corrections.jsonl to append to")
+    p.add_argument("--id-map", type=Path, help="file to append merge_graph --id-map lines to")
+    p.add_argument("--reviewer", default="")
+    p.set_defaults(func=cmd_reconcile_apply)
+
+    p = sub.add_parser("editorial-check")
+    p.add_argument("--editorial", required=True, type=Path)
+    p.add_argument("--graph", required=True, type=Path)
+    p.set_defaults(func=cmd_editorial_check)
+
+    p = sub.add_parser("editorial-apply")
+    p.add_argument("--editorial", required=True, type=Path)
+    p.add_argument("--graph", required=True, type=Path)
+    p.add_argument("--run-dir", required=True, type=Path)
+    p.set_defaults(func=cmd_editorial_apply)
 
     args = ap.parse_args(argv)
     return args.func(args)

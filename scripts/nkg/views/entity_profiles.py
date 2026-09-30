@@ -5,6 +5,9 @@ from typing import Any, Mapping
 from nkg.core.runtime import chapter_value, records
 
 
+TIERS = ("protagonist", "core", "major", "minor", "background")
+
+
 def _chapter_end(graph: Mapping[str, Any]) -> int:
     metadata = graph.get("metadata") if isinstance(graph.get("metadata"), Mapping) else {}
     value = chapter_value(metadata.get("chapter_end"))
@@ -140,12 +143,35 @@ def build_entity_profiles(graph: Mapping[str, Any], hints: Mapping[str, Any] | N
             valid_from, valid_to = _interval(item, default_from=first)
             badges.append({"label": item["label"], "valid_from": valid_from, "valid_to": valid_to})
 
+        tier = raw.get("tier")
+        if tier is not None and tier not in TIERS:
+            issues.append({"code": "bad_display_tier", "entity_id": entity_id, "tier": tier})
+            tier = None
+        relation_labels: list[dict[str, Any]] = []
+        for index, item in enumerate(raw.get("relation_to_protagonist", []) if isinstance(raw.get("relation_to_protagonist"), list) else []):
+            if not isinstance(item, Mapping) or not isinstance(item.get("label"), str) or not item.get("label"):
+                issues.append({"code": "bad_relation_label", "entity_id": entity_id, "index": index})
+                continue
+            valid_from, valid_to = _interval(item, default_from=first)
+            relation_labels.append({"label": item["label"], "valid_from": valid_from, "valid_to": valid_to})
+        arc_bios: dict[str, str] = {}
+        arc_ids = {a.get("id") for a in records(graph.get("story_arcs"))}
+        raw_bios = raw.get("arc_bios") if isinstance(raw.get("arc_bios"), Mapping) else {}
+        for arc_id, text in raw_bios.items():
+            if arc_id not in arc_ids:
+                issues.append({"code": "unknown_display_arc", "entity_id": entity_id, "arc_id": arc_id})
+            elif isinstance(text, str) and text.strip():
+                arc_bios[arc_id] = text.strip()
+
         profiles[entity_id] = {
             "entity_id": entity_id,
             "first_chapter": first,
             "headlines": sorted(headlines, key=lambda row: row["valid_from"]),
             "important_attributes": sorted(important, key=lambda row: row["valid_from"]),
             "badges": sorted(badges, key=lambda row: row["valid_from"]),
+            "tier": tier,
+            "relation_to_protagonist": sorted(relation_labels, key=lambda row: row["valid_from"]),
+            "arc_bios": arc_bios,
             "ai_authored": bool(raw),
         }
 

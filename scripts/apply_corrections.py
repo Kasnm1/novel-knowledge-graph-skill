@@ -97,7 +97,7 @@ def parse_path(value: Any) -> list[str | int]:
     raise ValueError("replace requires path as dot string or list")
 
 
-def replace_path(record: dict[str, Any], path: list[str | int], value: Any) -> None:
+def replace_path(record: dict[str, Any], path: list[str | int], value: Any, *, allow_create: bool = False) -> None:
     current: Any = record
     for segment in path[:-1]:
         if isinstance(current, dict) and segment in current:
@@ -107,7 +107,9 @@ def replace_path(record: dict[str, Any], path: list[str | int], value: Any) -> N
         else:
             raise ValueError(f"path segment {segment!r} does not exist")
     last = path[-1]
-    if isinstance(current, dict) and isinstance(last, str) and last in current:
+    # `allow_create` lets a reviewed correction add a field the record never had
+    # (a payoff chapter on an open clue); without it a typo in the path fails loudly.
+    if isinstance(current, dict) and isinstance(last, str) and (last in current or allow_create):
         current[last] = copy.deepcopy(value)
     elif isinstance(current, list) and isinstance(last, int) and 0 <= last < len(current):
         current[last] = copy.deepcopy(value)
@@ -216,7 +218,8 @@ def apply_corrections(base_graph: Mapping[str, Any], corrections: list[dict[str,
             before = records[index]
             require_hash(correction, "before_hash", value_hash(before))
             if operation == "replace":
-                replace_path(records[index], parse_path(correction.get("path")), correction.get("value"))
+                replace_path(records[index], parse_path(correction.get("path")), correction.get("value"),
+                             allow_create=correction.get("allow_create") is True)
                 after = records[index]
             elif operation == "retract":
                 records.pop(index)

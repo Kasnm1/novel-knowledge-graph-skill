@@ -158,3 +158,52 @@ It fails when any record kind falls below the recall floor or below the previous
 and artifacts for cultivation, identity and wealth for urban stories, routes and
 intimacy for harem stories). The profile changes how closely each checklist item
 is read; it never removes an item or its receipt.
+
+## 10. Reconcile across chapters
+
+Chapter workers record beginnings; endings are found afterwards, arc by arc:
+
+```bash
+python scripts/audit_workflow.py reconcile-candidates --graph <run>/graph.json --output <run>/reconcile-candidates.json
+```
+
+Candidates: clues whose entities act together later (`foreshadow_payoff`), promises whose
+parties meet again (`commitment_resolution`), relations whose endpoint dies — unless the
+character keeps acting afterwards — or whose pair turns hostile (`relation_close`), routes whose
+dates disagree with their status or intimate acts (`romance_milestone`), entities sharing a name
+(`duplicate_entity`), items and skills without categories (`categorize`), places and organizations
+without a parent (`hierarchy`). An AI reviewer reads the evidence for each candidate in its arc and
+answers:
+
+```json
+{"decisions": [
+  {"candidate_id": "rcn_foreshadow_payoff_0001", "decision": "apply", "reason": "第7章强吻订契约兑现了索要灵魂",
+   "evidence_ids": ["ev_f01_031"], "set": {"payoff_chapter": 7, "payoff_event_id": "event_f01_012", "status": "resolved"}},
+  {"candidate_id": "rcn_relation_close_0003", "decision": "apply", "set": {"valid_to": 75, "close_reason": "death"}},
+  {"candidate_id": "rcn_duplicate_entity_0001", "decision": "reject", "reason": "两个不同的人，只是外号相同"},
+  {"candidate_id": "rcn_duplicate_entity_0002", "decision": "apply", "keep": "org_yimeidao", "merge": "org_yimei_dao"}
+]}
+```
+
+```bash
+python scripts/audit_workflow.py reconcile-apply --graph <run>/graph.json --candidates <run>/reconcile-candidates.json --decisions decisions.json --corrections <run>/corrections.jsonl --id-map <run>/id-map.txt
+```
+
+Decisions become hash-guarded `corrections.jsonl` lines replayed by `apply_corrections.py`; merges
+become `merge_graph.py --id-map` lines. `unresolved` decisions stay open as review work.
+
+## 11. Editorial layer
+
+After reconciliation an AI editor writes `editorial.json`: the final arcs (starting from the survey
+draft), each chapter's arcs, per-entity tier, one dated headline per arc, arc bios, the relation to
+the protagonist, and one recap per arc. Every headline carries evidence and starts no earlier than
+the entity's first chapter.
+
+```bash
+python scripts/audit_workflow.py editorial-check --editorial editorial.json --graph <run>/graph.json
+python scripts/audit_workflow.py editorial-apply --editorial editorial.json --graph <run>/graph.json --run-dir <run>
+```
+
+Arcs and chapter membership become a supplementary fragment (facts, merged as usual); tiers,
+headlines, bios and recaps become `display-hints.json`, read by `build_entity_profiles.py`.
+Reader-facing judgment never enters the canonical graph.

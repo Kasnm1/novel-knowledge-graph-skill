@@ -26,9 +26,9 @@ import collections
 import re
 from typing import Any, Iterable, Mapping
 
+from nkg.views.entity_profiles import TIERS
 from nkg.workflow.registry import SLUG, TYPE_PREFIXES, IdRegistry
 
-TIERS = ("protagonist", "core", "major", "minor")
 NOTE_MARKERS = re.compile(r"月票|推荐票|求票|请假|上架|感言|更新时间|加更|单章|作者的话|公告")
 SPEAKER = re.compile(r"([一-龥]{2,3}?)(?:冷笑道|笑道|说道|问道|喝道|怒道|叹道|说|道|问)[：:，,]?[“「\"]")
 LEVEL_PHRASE = re.compile(r"[一-龥]{1,4}(?:境|期|阶|级|品|重|星|层)(?:初期|中期|后期|巅峰|大圆满)?")
