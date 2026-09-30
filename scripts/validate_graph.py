@@ -12,6 +12,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 from attribute_keys import canonical_key
 from character_traits import (
@@ -83,17 +84,11 @@ def decode_source(raw: bytes) -> str:
     return _decode_source(raw)[0]
 
 
-def main() -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-    args = parse_args()
-    graph_path = args.graph.resolve()
-    try:
-        graph = json.loads(graph_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
+class _Context:
+    """Shared state for the rule functions: the graph, report channels and indexes."""
 
+
+def _rule_setup(ctx: _Context) -> None:
     errors: list[dict] = []
     warnings: list[dict] = []
     # A third channel for facts that are worth reporting but are not defects: a
@@ -129,7 +124,17 @@ def main() -> int:
         if isinstance(value, dict):
             return "value" in value or "label" in value
         return False
+    ctx.add = add
+    ctx.as_list = as_list
+    ctx.errors = errors
+    ctx.level_value_ok = level_value_ok
+    ctx.observations = observations
+    ctx.observe = observe
+    ctx.warnings = warnings
 
+
+def _rule_arrays_and_metadata(ctx: _Context) -> None:
+    add, graph = ctx.add, ctx.graph
     for name in CORE_ARRAYS:
         if not isinstance(graph.get(name), list):
             add("error", "missing_array", f"{name} must be an array")
@@ -160,7 +165,12 @@ def main() -> int:
             add("error", "coverage_mismatch", "chapter_start/chapter_end must match analyzed_chapters bounds")
     if isinstance(metadata.get("source_sha256"), str) and not re.fullmatch(r"[0-9a-fA-F]{64}", metadata["source_sha256"]):
         add("error", "bad_source_hash", "metadata.source_sha256 must be a 64-character SHA-256 hex digest")
+    ctx.analyzed_set = analyzed_set
+    ctx.metadata = metadata
 
+
+def _rule_input_freshness(ctx: _Context) -> None:
+    add, graph_path, metadata, observe = ctx.add, ctx.graph_path, ctx.metadata, ctx.observe
     # --- input freshness ---------------------------------------------------
     # The graph is a build product of the fragments, and nothing about the
     # graph's own consistency implies they have not changed since the merge. A
@@ -203,6 +213,9 @@ def main() -> int:
                 "图谱本身仍可读，但输入无法复核（运行目录被移动时也会出现这条）。",
             )
 
+
+def _rule_identity_index(ctx: _Context) -> None:
+    add, as_list, graph = ctx.add, ctx.as_list, ctx.graph
     all_records = [record for name in ARRAYS for record in graph[name] if isinstance(record, dict)]
     ids = [record.get("id") for record in all_records if record.get("id")]
     for record_id, count in Counter(ids).items():
@@ -230,7 +243,18 @@ def main() -> int:
         for ref in refs:
             if ref not in evidence_ids:
                 add("error", "bad_evidence_ref", f"Unknown evidence ID: {ref}", record_id)
+    ctx.check_evidence_refs = check_evidence_refs
+    ctx.entity_ids = entity_ids
+    ctx.entity_names = entity_names
+    ctx.entity_types = entity_types
+    ctx.event_ids = event_ids
+    ctx.evidence_ids = evidence_ids
+    ctx.known_ids = known_ids
+    ctx.require = require
 
+
+def _rule_evidence(ctx: _Context) -> None:
+    add, analyzed_set, graph, require = ctx.add, ctx.analyzed_set, ctx.graph, ctx.require
     for record in graph["evidence"]:
         if not isinstance(record, dict):
             add("error", "bad_record", "evidence record must be an object")
@@ -244,6 +268,9 @@ def main() -> int:
         if analyzed_set and record.get("chapter") not in analyzed_set:
             add("error", "chapter_outside_coverage", f"Evidence chapter {record.get('chapter')} is not analyzed", record.get("id"))
 
+
+def _rule_entities(ctx: _Context) -> None:
+    add, as_list, check_evidence_refs, entity_names, evidence_ids, graph, require = ctx.add, ctx.as_list, ctx.check_evidence_refs, ctx.entity_names, ctx.evidence_ids, ctx.graph, ctx.require
     for record in graph["entities"]:
         if not isinstance(record, dict):
             add("error", "bad_record", "entity record must be an object")
@@ -346,6 +373,9 @@ def main() -> int:
             if primary_count > 1:
                 add("error", "multiple_primary_categories", "An entity may have at most one display-primary category", record.get("id"))
 
+
+def _rule_events(ctx: _Context) -> None:
+    add, analyzed_set, as_list, check_evidence_refs, entity_ids, event_ids, graph, require = ctx.add, ctx.analyzed_set, ctx.as_list, ctx.check_evidence_refs, ctx.entity_ids, ctx.event_ids, ctx.graph, ctx.require
     for record in graph["events"]:
         if not isinstance(record, dict):
             add("error", "bad_record", "event record must be an object")
@@ -368,7 +398,11 @@ def main() -> int:
             add("error", "chapter_outside_coverage", f"Event chapter {record.get('chapter')} is not analyzed", record.get("id"))
 
     relation_groups: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
+    ctx.relation_groups = relation_groups
 
+
+def _rule_relations(ctx: _Context) -> None:
+    add, analyzed_set, check_evidence_refs, entity_ids, graph, relation_groups, require = ctx.add, ctx.analyzed_set, ctx.check_evidence_refs, ctx.entity_ids, ctx.graph, ctx.relation_groups, ctx.require
     def relation_semantic_key(record: dict) -> tuple[str, str, str]:
         source, target = str(record.get("source_id", "")), str(record.get("target_id", ""))
         relation_type = str(record.get("relation_type", ""))
@@ -429,6 +463,9 @@ def main() -> int:
                     break
                 stack.append((parent, (*path, parent)))
 
+
+def _rule_state_changes_and_levels(ctx: _Context) -> None:
+    add, analyzed_set, check_evidence_refs, entity_ids, entity_types, event_ids, graph, level_value_ok, observe, require = ctx.add, ctx.analyzed_set, ctx.check_evidence_refs, ctx.entity_ids, ctx.entity_types, ctx.event_ids, ctx.graph, ctx.level_value_ok, ctx.observe, ctx.require
     for record in graph["state_changes"]:
         if not isinstance(record, dict):
             add("error", "bad_record", "state_change record must be an object")
@@ -496,6 +533,9 @@ def main() -> int:
             for axis_id in axis_members:
                 add("error", "duplicate_level_system", f"Compatible level system {system_key!r} is split across axes: {', '.join(axis_members)}; extend one existing axis", axis_id)
 
+
+def _rule_romance_routes(ctx: _Context) -> None:
+    add, analyzed_set, entity_ids, entity_types, evidence_ids, graph, observe, require = ctx.add, ctx.analyzed_set, ctx.entity_ids, ctx.entity_types, ctx.evidence_ids, ctx.graph, ctx.observe, ctx.require
     for record in graph["romance_routes"]:
         if not isinstance(record, dict):
             add("error", "bad_record", "romance_route record must be an object")
@@ -612,6 +652,9 @@ def main() -> int:
                 f"--id-map unless the relationship genuinely ended and was rebuilt",
             )
 
+
+def _rule_intimacy_and_route_coverage(ctx: _Context) -> None:
+    add, analyzed_set, as_list, check_evidence_refs, entity_ids, graph, metadata, observe, require = ctx.add, ctx.analyzed_set, ctx.as_list, ctx.check_evidence_refs, ctx.entity_ids, ctx.graph, ctx.metadata, ctx.observe, ctx.require
     # 亲密行为：每条都要说清发生了什么、涉及谁、是否自愿。只写「发生了亲密关系」
     # 的记录，正是这个数组要消灭的东西。
     for record in graph["intimate_acts"]:
@@ -704,6 +747,9 @@ def main() -> int:
     if not protagonist_ids and any(canonical_event_type(e.get("type")) == "intimacy" for e in graph.get("events") or [] if isinstance(e, dict)):
         observe("protagonist_ids_missing", "存在亲密事件但 metadata/profile 未声明 protagonist_ids，无法执行主角侧路线候选覆盖门禁。")
 
+
+def _rule_level_conversions(ctx: _Context) -> None:
+    add, analyzed_set, as_list, check_evidence_refs, graph, observe, require = ctx.add, ctx.analyzed_set, ctx.as_list, ctx.check_evidence_refs, ctx.graph, ctx.observe, ctx.require
     # 等级换算：原文把两个等级体系对上号的地方，例如「修罗王……十颗星的实力」。
     # 这类记录的全部价值在于「原文这么说」，所以三类错必须拦下：引用了不存在的轴、
     # 端点没钉住任何值（只剩 axis_id 的端点根本换算不出东西）、以及没有证据。
@@ -780,6 +826,9 @@ def main() -> int:
             f"建议归并到 scripts/intimacy_types.py，或确认其为本书专有的行为后保留。",
         )
 
+
+def _rule_foreshadowing_and_issues(ctx: _Context) -> None:
+    add, analyzed_set, as_list, check_evidence_refs, entity_ids, event_ids, evidence_ids, graph, known_ids, require = ctx.add, ctx.analyzed_set, ctx.as_list, ctx.check_evidence_refs, ctx.entity_ids, ctx.event_ids, ctx.evidence_ids, ctx.graph, ctx.known_ids, ctx.require
     valid_fs_status = {"suspected", "open", "progressed", "partially_resolved", "resolved", "false_lead"}
     for record in graph["foreshadowing"]:
         if not isinstance(record, dict):
@@ -835,6 +884,9 @@ def main() -> int:
             if ref not in evidence_ids:
                 add("error", "bad_evidence_ref", f"Unknown review evidence: {ref}", record.get("id"))
 
+
+def _rule_source_audit(ctx: _Context) -> None:
+    add, args, graph, metadata = ctx.add, ctx.args, ctx.graph, ctx.metadata
     source_audit = {"performed": False}
     if args.manifest:
         try:
@@ -876,7 +928,11 @@ def main() -> int:
             source_audit = {"performed": True, "source_file": str(source_path), "source_sha256": actual_hash, "evidence_audited": audited}
         except (OSError, KeyError, json.JSONDecodeError, UnicodeError) as exc:
             add("error", "source_audit_failed", str(exc))
+    ctx.source_audit = source_audit
 
+
+def _rule_vocabulary_and_fidelity(ctx: _Context) -> None:
+    as_list, graph, observe = ctx.as_list, ctx.graph, ctx.observe
     # Event `type` is free-form in the schema, so a run drifts into nearly one label
     # per event. Report the labels outside the recommended set in a single line: the
     # type facet cannot group anything if every group holds one event, but a
@@ -937,6 +993,9 @@ def main() -> int:
             "请核对原文章节把内容补全。",
         )
 
+
+def _rule_item_roles(ctx: _Context) -> None:
+    add, check_evidence_refs, graph, require = ctx.add, ctx.check_evidence_refs, ctx.graph, ctx.require
     entity_ids_all = {e.get("id") for e in graph.get("entities") or []}
     entity_types_all = {e.get("id"): e.get("type") for e in graph.get("entities") or []}
 
@@ -971,7 +1030,12 @@ def main() -> int:
         start, end = record.get("valid_from"), record.get("valid_to")
         if isinstance(start, int) and isinstance(end, int) and start > end:
             add("error", "bad_validity", "item_role.valid_from exceeds valid_to", record_id)
+    ctx.entity_ids_all = entity_ids_all
+    ctx.entity_types_all = entity_types_all
 
+
+def _rule_character_traits(ctx: _Context) -> None:
+    add, check_evidence_refs, entity_ids_all, entity_types_all, graph, require = ctx.add, ctx.check_evidence_refs, ctx.entity_ids_all, ctx.entity_types_all, ctx.graph, ctx.require
     # ---- 人物特征 ----
     # 校验的三件事都对应一类真实错误：分面写成了听不懂的词、断言指向了非人物实体、
     # 断言本身是标签而非描述（「漂亮」对读者没有增量，图谱里已有 summary 承担它）。
@@ -1018,6 +1082,9 @@ def main() -> int:
             f"{len(trait_facet_misses)} 条 character_traits.facet 不在规范集内：{listed}"
             "（规范值见 scripts/character_traits.py）")
 
+
+def _rule_chapter_summaries(ctx: _Context) -> None:
+    add, as_list, check_evidence_refs, graph, observe, require = ctx.add, ctx.as_list, ctx.check_evidence_refs, ctx.graph, ctx.observe, ctx.require
     # ---- 章节梗概 ----
     summary_by_chapter: dict[int, str] = {}
     event_ids_all = {e.get("id") for e in graph.get("events") or []}
@@ -1059,7 +1126,11 @@ def main() -> int:
             observe("chapters_without_summary",
                     f"{len(gaps)} 章已分析但没有章节梗概（{shown}"
                     + ("…" if len(gaps) > 12 else "") + "）")
+    ctx.event_ids_all = event_ids_all
 
+
+def _rule_story_arcs(ctx: _Context) -> None:
+    add, check_evidence_refs, entity_ids_all, event_ids_all, graph, require = ctx.add, ctx.check_evidence_refs, ctx.entity_ids_all, ctx.event_ids_all, ctx.graph, ctx.require
     # ---- 交叉剧情弧 ----
     # 区间可以重叠或嵌套；这里只验证每一条弧自身和显式引用，不把重叠误判为冲突。
     arc_ids = {
@@ -1139,6 +1210,9 @@ def main() -> int:
         if dominant is not None and dominant not in refs:
             add("error", "bad_dominant_arc", "dominant_arc_id must also appear in arc_ids", record_id)
 
+
+def _build_report(ctx: _Context) -> dict:
+    errors, graph, graph_path, observations, source_audit, warnings = ctx.errors, ctx.graph, ctx.graph_path, ctx.observations, ctx.source_audit, ctx.warnings
     report = {
         "graph": str(graph_path),
         "validated_at": datetime.now(timezone.utc).isoformat(),
@@ -1151,11 +1225,59 @@ def main() -> int:
         "warnings": warnings,
         "observations": observations,
     }
+    return report
+
+
+def validate(graph: dict, graph_path: Path | str = "", manifest: Path | None = None) -> dict:
+    """Validate a merged graph and return the report; the graph's missing arrays are defaulted in place."""
+    ctx = _Context()
+    ctx.graph, ctx.graph_path, ctx.args = graph, Path(graph_path), SimpleNamespace(manifest=manifest)
+    for rule in RULES:
+        rule(ctx)
+    return _build_report(ctx)
+
+
+RULES = (
+    _rule_setup,
+    _rule_arrays_and_metadata,
+    _rule_input_freshness,
+    _rule_identity_index,
+    _rule_evidence,
+    _rule_entities,
+    _rule_events,
+    _rule_relations,
+    _rule_state_changes_and_levels,
+    _rule_romance_routes,
+    _rule_intimacy_and_route_coverage,
+    _rule_level_conversions,
+    _rule_foreshadowing_and_issues,
+    _rule_source_audit,
+    _rule_vocabulary_and_fidelity,
+    _rule_item_roles,
+    _rule_character_traits,
+    _rule_chapter_summaries,
+    _rule_story_arcs,
+)
+
+
+def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    args = parse_args()
+    graph_path = args.graph.resolve()
+    try:
+        graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    report = validate(graph, graph_path, args.manifest)
     output = json.dumps(report, ensure_ascii=False, indent=2)
     if args.report:
         args.report.resolve().write_text(output, encoding="utf-8")
     print(output)
-    return 0 if not errors else 1
+    return 0 if report["valid"] else 1
+
 
 
 if __name__ == "__main__":

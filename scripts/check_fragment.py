@@ -26,6 +26,7 @@ import sys
 from pathlib import Path
 
 from chapter_audit import check_fragment_audit
+from fragment_extensions import validate_fragment_extensions
 from required_fields import LOSS_ACTIONS
 from nkg.core.records import normalize_text as norm
 from nkg.core.records import READER_PROSE_FIELDS
@@ -46,7 +47,7 @@ SINGLE_ID_FIELDS = (
 CHAPTER_TOKEN = re.compile(r"第\s*(\d+)\s*章")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--fragment", required=True, type=Path)
     p.add_argument("--graph", type=Path, help="已合并图谱，用于校验跨片实体引用")
@@ -67,7 +68,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument("--json", type=Path, help="把结果写成 JSON")
-    return p.parse_args()
+    return p.parse_args(argv)
 
 
 class Checker:
@@ -790,8 +791,8 @@ def check_non_narrative_issues(frag: dict, ck: Checker, analyzed: list[int]) -> 
                 )
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     ck = Checker()
     try:
         frag = json.loads(args.fragment.read_text(encoding="utf-8"))
@@ -904,6 +905,8 @@ def main() -> int:
     check_item_roles(frag, ck, ev_ids)
     check_story_arcs(frag, ck, ev_ids, ceiling)
     check_fragment_audit(frag, entity_types, ev_ids, analyzed, ck.err, ck.warn)
+    for message in validate_fragment_extensions(frag):
+        ck.err(message)
 
     # 计划文件按章段自动匹配，**不要写死文件名**。此前这里硬编码
     # `plan-201-300.json`，于是覆盖 301-400 的分片一个都匹配不上，
