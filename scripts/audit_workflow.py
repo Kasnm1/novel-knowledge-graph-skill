@@ -8,6 +8,9 @@
   capsule          state before a chapter, for the worker auditing it
   recall           recall candidates for the verifier
   score            per-chapter quality into coverage-ledger.json
+  status           unit states, lane progress and the token ledger (audit-state.json)
+  next             claim ready units: fragment name, marker and first-chapter capsule
+  update           record a unit's status, gate runs, verifier rounds and tokens
 """
 from __future__ import annotations
 
@@ -20,6 +23,7 @@ from io_utils import atomic_write_json, atomic_write_text
 from nkg.core.records import read_chapter_index
 from nkg.workflow.capsule import build_chapter_capsule
 from nkg.workflow.planner import plan_audit
+from nkg.workflow.progress import init_state, load_state, ready_units, save_state, summary, update_unit
 from nkg.workflow.quality import card_complete, chapter_score, update_ledger
 from nkg.workflow.recall import apply_verdicts, recall_candidates
 from nkg.workflow.registry import AmbiguousName, IdRegistry, RegistryError
@@ -144,6 +148,55 @@ def cmd_score(a) -> int:
     return 0
 
 
+def _state(run_dir: Path) -> tuple[Path, dict]:
+    state_path = run_dir / "audit-state.json"
+    plan = _json(run_dir / "plan.json")
+    state = init_state(plan, load_state(state_path))
+    return state_path, state
+
+
+def cmd_status(a) -> int:
+    state_path, state = _state(a.run_dir)
+    save_state(state_path, state)
+    _emit(summary(state), None)
+    return 0
+
+
+def cmd_next(a) -> int:
+    state_path, state = _state(a.run_dir)
+    registry_path = a.run_dir / "ids.json"
+    registry = IdRegistry.load(registry_path)
+    graph = _json(a.graph) if a.graph else None
+    orders = []
+    for unit_id in ready_units(state, a.lane)[:a.count]:
+        row = state["units"][unit_id]
+        issued = registry.issue_fragment(unit_id, a.run_dir / "fragments")
+        order = {"unit": unit_id, "chapters": row["chapters"], **issued}
+        if graph is not None:
+            first = row["chapters"][0]
+            rows = read_chapter_index(a.run_dir / "chapters.jsonl", first, first, with_text=True)
+            capsule = build_chapter_capsule(graph, first, text=rows[0].get("text") if rows else None)
+            capsule_path = a.run_dir / "capsules" / f"{unit_id}-ch{first:04d}.json"
+            atomic_write_json(capsule_path, capsule)
+            order["capsule"] = str(capsule_path)
+        update_unit(state, unit_id, status="extracting", fragment=issued["fragment"], marker=issued["marker"])
+        orders.append(order)
+    registry.save(registry_path)
+    save_state(state_path, state)
+    _emit({"orders": orders, "note": "merge each finished unit before claiming the next unit in its lane, "
+                                     "so its capsule starts from the state that unit left"}, None)
+    return 0
+
+
+def cmd_update(a) -> int:
+    state_path, state = _state(a.run_dir)
+    row = update_unit(state, a.unit, status=a.status, gate_runs=a.gate_runs, verify_rounds=a.verify_rounds,
+                      tokens_extract=a.tokens_extract, tokens_verify=a.tokens_verify, note=a.note)
+    save_state(state_path, state)
+    _emit({a.unit: row}, None)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -212,6 +265,28 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--verifier", type=Path, help="verifier verdict JSON (see references/verifier-prompt.md)")
     p.add_argument("--ledger", type=Path, help="coverage-ledger.json to update")
     p.set_defaults(func=cmd_score)
+
+    p = sub.add_parser("status")
+    p.add_argument("--run-dir", required=True, type=Path, help="holds plan.json; audit-state.json is kept here")
+    p.set_defaults(func=cmd_status)
+
+    p = sub.add_parser("next")
+    p.add_argument("--run-dir", required=True, type=Path)
+    p.add_argument("--graph", type=Path, help="current merged graph, to write each unit's first-chapter capsule")
+    p.add_argument("--lane")
+    p.add_argument("--count", type=int, default=1)
+    p.set_defaults(func=cmd_next)
+
+    p = sub.add_parser("update")
+    p.add_argument("--run-dir", required=True, type=Path)
+    p.add_argument("--unit", required=True)
+    p.add_argument("--status", choices=("pending", "extracting", "verifying", "done", "blocked"))
+    p.add_argument("--gate-runs", type=int)
+    p.add_argument("--verify-rounds", type=int)
+    p.add_argument("--tokens-extract", type=int)
+    p.add_argument("--tokens-verify", type=int)
+    p.add_argument("--note")
+    p.set_defaults(func=cmd_update)
 
     args = ap.parse_args(argv)
     return args.func(args)

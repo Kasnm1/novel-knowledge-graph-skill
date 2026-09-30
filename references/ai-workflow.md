@@ -52,6 +52,17 @@ python scripts/audit_workflow.py plan --chapters-jsonl <run>/chapters.jsonl --su
   of the chapter after. Read them so a scene crossing the boundary is whole;
   record facts only inside the unit's own chapters.
 
+Run and resume from `audit-state.json` (kept beside `plan.json`):
+
+```bash
+python scripts/audit_workflow.py status --run-dir <run>                     # lanes, ready units, tokens spent and projected
+python scripts/audit_workflow.py next --run-dir <run> --graph <run>/graph.json --count 4   # claim ready units: fragment name, marker, capsule
+python scripts/audit_workflow.py update --run-dir <run> --unit L03-U12 --status done --gate-runs 2 --verify-rounds 1 --tokens-extract 41000 --tokens-verify 15000
+```
+
+Merge each finished unit before claiming the next unit in its lane, so the next capsule starts
+from the state that unit left. A new session resumes from `audit-state.json` alone.
+
 Parallel ten-chapter slices are not allowed: they are what left the sample run
 with stale states, unclosed relations and 546 thin chapters.
 
@@ -105,7 +116,15 @@ python scripts/audit_workflow.py score --graph <fragment-or-graph.json> --chapte
 ```
 
 Additionally re-audit a random 10% of chapters blind (a second extractor from
-scratch) and compare with the first result to estimate recall.
+scratch) and compare the two structurally:
+
+```bash
+python scripts/compare_fragments.py --a <first>.json --b <second>.json --chapters 301-305
+```
+
+Agreement per record kind (events, state changes, relations, traits, intimate acts,
+commitments, clues) shows where the audit is unstable. On the ten-chapter trial,
+Opus and Sonnet agreed at 0.75 overall, 1.0 on intimate acts and 0.64 on state changes.
 
 ## 7. Models
 
@@ -123,10 +142,15 @@ rounds, and is measured, not assumed.
 
 ## 8. Gold chapters
 
-Keep about ten human-checked chapters as a gold set and run
-`accuracy_regression_gate.py` against it before changing a prompt, the unit size,
-the capsule or a model. Recall of confirmed records, high-risk candidates and
-evidence linkage may not drop.
+Keep about ten human-checked chapters as a gold set. Before changing a prompt, the
+unit size, the capsule or a model, audit the gold chapters with the new setting and gate:
+
+```bash
+python scripts/compare_fragments.py --a <new>.json --b <gold>.json --gold --min-recall 0.8 --previous <last-gold-report>.json --output <gold-report>.json
+```
+
+It fails when any record kind falls below the recall floor or below the previous report.
+(`accuracy_regression_gate.py` remains the ID-level gate for re-running the *same* run.)
 
 ## 9. Book profile focus
 

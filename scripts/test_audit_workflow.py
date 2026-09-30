@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 
 import audit_workflow
+import compare_fragments
+from nkg.workflow.progress import init_state, ready_units, summary, update_unit
 from chapter_audit import check_fragment_audit
 from nkg.workflow.authoring import FragmentBuilder
 from nkg.workflow.capsule import build_chapter_capsule
@@ -207,6 +209,34 @@ class AuthoringTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             self.build({}).build()
         self.assertIn("commitments", str(ctx.exception))
+
+
+class ProgressAndCompareTests(unittest.TestCase):
+    def test_lanes_advance_in_parallel_and_units_in_order(self):
+        plan = plan_audit([{"chapter": c, "char_count": 4000} for c in range(1, 13)], lane_chapters=6,
+                          target_chars=10_000, max_chapters=3)
+        state = init_state(plan)
+        self.assertEqual(ready_units(state), ["L01-U01", "L02-U01"])
+        update_unit(state, "L01-U01", status="done", gate_runs=2, tokens_extract=30000, tokens_verify=10000)
+        self.assertEqual(ready_units(state), ["L01-U02", "L02-U01"])
+        s = summary(state)
+        self.assertEqual(s["chapters"]["done"], 2)
+        self.assertEqual(s["tokens"]["per_chapter_mean"], 20000)
+        self.assertEqual(s["tokens"]["projected_remaining"], 200000)
+        again = init_state(plan, state)
+        self.assertEqual(again["units"]["L01-U01"]["status"], "done")
+
+    def test_compare_matches_structure_and_gates_against_gold(self):
+        a = {"events": [{"id": "a1", "chapter": 1, "participant_ids": ["x", "y"]}],
+             "state_changes": [{"id": "a2", "chapter": 1, "entity_id": "x", "facet": "health"}]}
+        gold = {"events": [{"id": "g1", "chapter": 1, "participant_ids": ["y", "x"]},
+                           {"id": "g2", "chapter": 1, "participant_ids": ["z"]}],
+                "state_changes": [{"id": "g3", "chapter": 1, "entity_id": "x", "facet": "health"}]}
+        report = compare_fragments.compare(a, gold)
+        self.assertEqual(report["kinds"]["events"]["matched"], 1)
+        self.assertEqual(report["kinds"]["events"]["only_b"], ["g2"])
+        failures = compare_fragments.gold_gate(report, min_recall=0.8)
+        self.assertEqual(failures, ["events: recall 0.50 < 0.80"])
 
 
 class CliTests(unittest.TestCase):
