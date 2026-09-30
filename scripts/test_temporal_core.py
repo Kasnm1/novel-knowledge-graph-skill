@@ -104,6 +104,16 @@ class TemporalCoreTests(unittest.TestCase):
         for entity in g["entities"]:
             self.assertEqual(built[entity["id"]], snapshot.dynamic_state_for_entity(g, entity["id"], 6), entity["id"])
 
+    def test_relation_stance_replays_by_chapter(self):
+        g = graph()
+        g["relations"].append({"id": "r2", "source_id": "hero", "target_id": "ally", "relation_type": "sworn_sibling_of",
+                               "valid_from": 1, "status": "active", "stance": "warm", "evidence_ids": ["e1"],
+                               "observations": [{"chapter": 6, "stance": "contempt", "description": "反目",
+                                                 "evidence_ids": ["e6"]}]})
+        stance = lambda n: next(r for r in filter_graph(g, n)["relations"] if r["id"] == "r2")["stance"]
+        self.assertEqual(stance(3), "warm")
+        self.assertEqual(stance(7), "contempt")
+
     def test_canonical_graph_is_not_mutated(self):
         g = graph()
         before = copy.deepcopy(g)

@@ -325,6 +325,10 @@ def _relation_asof(row: dict[str, Any], chapter: int) -> None:
         row["status"] = visible_status
     elif end is not None and end > chapter and row.get("status") not in {None, "active", "uncertain"}:
         row["status"] = "active"
+    # the stance a reader at `chapter` may see: the latest visible observation's, else the base one
+    visible_stance = next((obs.get("stance") for obs in reversed(observations) if isinstance(obs.get("stance"), str)), None)
+    if visible_stance:
+        row["stance"] = visible_stance
 
 
 def _scrub_temporal_metadata(meta: dict[str, Any], chapter: int) -> None:

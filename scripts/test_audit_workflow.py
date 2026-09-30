@@ -192,6 +192,17 @@ class AuthoringTests(unittest.TestCase):
         check_fragment_audit(frag, types, {e["id"] for e in frag["evidence"]}, [1], errors.append, lambda _: None)
         self.assertEqual(errors, [])
 
+    def test_observe_relation_appends_or_restates(self):
+        b = FragmentBuilder("fragment-02", "f02", [6])
+        b.observe_relation("rel_f01_004", 6, "四长老转为鄙视萧烈", "四长老冷眼相看。", stance="contempt",
+                           base={"source_id": "char_elder", "target_id": "char_xiao_lie",
+                                 "relation_type": "sworn_sibling_of", "valid_from": 1, "status": "active"})
+        rel = b.data["relations"][0]
+        self.assertEqual(rel["id"], "rel_f01_004")
+        self.assertEqual(rel["observations"][0]["stance"], "contempt")
+        with self.assertRaises(ValueError):
+            b.observe_relation("rel_missing", 6, "x", "四长老冷眼相看。", stance="cold")
+
     def test_build_refuses_items_without_records_or_reason(self):
         with self.assertRaises(ValueError) as ctx:
             self.build({}).build()

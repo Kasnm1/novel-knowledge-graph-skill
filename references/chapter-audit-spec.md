@@ -74,7 +74,7 @@ says what the text lacks.
 | `state_check` | 在场人物状态确认 | state changes other than level/skill/possession/knowledge |
 | `levels` | 等级变化 | `level` state changes |
 | `skills_items` | 功法与物品得失 | `skill`/`possession` changes + `item_roles` opened or closed |
-| `relations` | 关系变化 | relations starting, ending or gaining an observation |
+| `relations` | 关系变化 | relations starting, ending or gaining an observation — including an attitude shift recorded as an observation with a new `stance` |
 | `knowledge` | 信息与秘密 | `knowledge` changes + events with an `information` facet |
 | `combat` | 战斗与伤亡 | events with `combat` or `mortality` facets |
 | `transactions` | 交易与财富 | events with a `transaction` facet |

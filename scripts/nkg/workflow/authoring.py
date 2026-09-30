@@ -115,6 +115,30 @@ class FragmentBuilder:
                                        "valid_from": valid_from, "status": status,
                                        "evidence_ids": self.evidence(valid_from, quotes), **fields})
 
+    def observe_relation(self, relation_id: str, chapter: int, description: str, quotes: Quotes, *,
+                         stance: str | None = None, status: str | None = None, valid_to: int | None = None,
+                         base: Mapping[str, Any] | None = None) -> str:
+        """A later development inside an existing relation: an attitude shift, a status change, an ending.
+
+        When the relation was declared in this fragment the observation is appended to it; otherwise
+        `base` (source_id, target_id, relation_type, valid_from, status) restates the relation under the
+        same ID and the merge folds the observation into the canonical episode.
+        """
+        observation = {"chapter": chapter, "description": description, "evidence_ids": self.evidence(chapter, quotes)}
+        for key, value in (("stance", stance), ("status", status), ("valid_to", valid_to)):
+            if value is not None:
+                observation[key] = value
+        record = next((r for r in self.data["relations"] if r["id"] == relation_id), None)
+        if record is None:
+            if base is None:
+                raise ValueError(f"{relation_id} is not in this fragment; pass base= to restate it")
+            record = {"id": relation_id, **dict(base), "evidence_ids": list(observation["evidence_ids"]), "observations": []}
+            self.data["relations"].append(record)
+        record.setdefault("observations", []).append(observation)
+        if valid_to is not None:
+            record["valid_to"] = valid_to
+        return relation_id
+
     def trait(self, entity_id: str, facet: str, statement: str, chapter: int, quotes: Quotes,
               confidence: str = "explicit") -> str:
         return self._add("character_traits", {"entity_id": entity_id, "facet": facet, "statement": statement,

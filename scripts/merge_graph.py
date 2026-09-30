@@ -172,7 +172,7 @@ def relation_observation(record: dict) -> dict:
         "chapter": record.get("chapter") if isinstance(record.get("chapter"), int) else record.get("valid_from"),
         "evidence_ids": unique(list(record.get("evidence_ids") or [])),
     }
-    for field in ("description", "status", "valid_from", "valid_to", "close_reason"):
+    for field in ("description", "status", "stance", "valid_from", "valid_to", "close_reason"):
         value = record.get(field)
         if value not in (None, "", [], {}):
             observation[field] = deepcopy(value)
@@ -352,6 +352,10 @@ def main(argv: list[str] | None = None) -> int:
                 if name == "romance_routes" and not _blank(existing.get("status")) and not _blank(record.get("status")):
                     if ROMANCE_STATUS_RANK.get(existing["status"], -2) > ROMANCE_STATUS_RANK.get(record["status"], -2):
                         incoming = {**incoming, "status": existing["status"]}
+                if name == "relations":
+                    # a restated relation keeps every observation (status, stance, wording) of both sides
+                    indexes[name][record_id] = merge_relation_records(prepare_relation(existing), prepare_relation(incoming))
+                    continue
                 for field in scalar_overrides(existing, incoming):
                     overrides.append({"kind": name, "id": record_id, "field": field, "file": path.name})
                 indexes[name][record_id] = merge_record(existing, incoming)

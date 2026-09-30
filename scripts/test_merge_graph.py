@@ -65,6 +65,15 @@ class MergeGraphTests(unittest.TestCase):
         self.assertEqual(graph["relations"][0]["relation_type"], "possesses")
         self.assertTrue(graph["metadata"]["relation_type_canonicalization"])
 
+    def test_stance_shift_is_kept_as_an_observation(self):
+        rel = lambda stance, frm: {"id": "r1", "source_id": "a", "target_id": "b", "relation_type": "sworn_sibling_of",
+                                   "valid_from": frm, "status": "active", "stance": stance, "evidence_ids": []}
+        graph = merge(fragment(1, 10, relations=[rel("warm", 1)]),
+                      fragment(11, 20, relations=[{**rel("contempt", 1), "chapter": 12}]))
+        stances = [o.get("stance") for o in graph["relations"][0]["observations"]]
+        self.assertIn("warm", stances)
+        self.assertIn("contempt", stances)
+
     def test_scalar_rewrite_is_reported_not_silent(self):
         graph = merge(fragment(1, 10, foreshadowing=[{"id": "fs1", "label": "旧标签"}]),
                       fragment(11, 20, foreshadowing=[{"id": "fs1", "label": "新标签"}]))

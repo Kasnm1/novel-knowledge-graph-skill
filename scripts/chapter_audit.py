@@ -29,7 +29,7 @@ from typing import Any, Callable, Iterable
 
 from controlled_vocab import CLIFFHANGER_TYPES
 from event_types import RECOMMENDED_EVENT_TYPES, canonical_event_type
-from relation_types import RELATION_GROUPS, RELATION_TYPE_ALIASES, canonical_relation_type
+from relation_types import RELATION_GROUPS, RELATION_TYPE_ALIASES, STANCES, canonical_relation_type
 from nkg.core.records import records
 
 AUDIT_PROTOCOL = 2
@@ -276,6 +276,9 @@ def check_card(card: dict, frag: dict, entity_types: dict[str, str], evidence_id
 def check_protocol_records(frag: dict, entity_types: dict[str, str], err: Report, warn: Report) -> None:
     """Record-level rules that protocol-2 fragments must satisfy."""
     for rel in _records(frag, "relations"):
+        for stance in [rel.get("stance"), *(o.get("stance") for o in rel.get("observations") or [] if isinstance(o, dict))]:
+            if stance is not None and stance not in STANCES:
+                err(f"{rel.get('id')}: stance {stance!r} 不在 relation_types.STANCES 里")
         raw = rel.get("relation_type")
         if raw in RELATION_TYPE_ALIASES:
             err(f"{rel.get('id')}: relation_type {raw!r} 请写规范类型 {RELATION_TYPE_ALIASES[raw]!r}")

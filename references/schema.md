@@ -105,7 +105,7 @@ Keep the type set small and reusable. Prefer a shared handful — `battle`, `bre
 
 Required: `id`, `source_id`, `target_id`, `relation_type`, `valid_from`, `status`, `evidence_ids`.
 
-Optional: `valid_to`, `direction`, `strength`, `description`, `change_ids`, `observations`, `close_reason`. When present, `strength` is an integer from 1 to 3; confidence belongs in evidence or state-change records, not this field. A later change closes or revises an interval; do not rewrite the earlier relationship as if it never existed.
+Optional: `valid_to`, `direction`, `strength`, `stance`, `description`, `change_ids`, `observations`, `close_reason`. `stance` (on the relation or on an observation) is how the source currently regards the target, from `relation_types.STANCES` (`intimate`, `warm`, `respectful`, `neutral`, `wary`, `cold`, `contempt`, `hostile`). An attitude shift inside the same relationship — sworn brothers turning contemptuous — is an observation with a new `stance`, not a new relation; as-of views show the latest visible stance. When present, `strength` is an integer from 1 to 3; confidence belongs in evidence or state-change records, not this field. A later change closes or revises an interval; do not rewrite the earlier relationship as if it never existed.
 
 Within one uninterrupted validity episode, one semantic relationship must have exactly one relation record. Repeated chapter evidence is appended to that record's `evidence_ids`; it must not create parallel edges. For symmetric relationships such as friendship, reversing `source_id` and `target_id` does not make a distinct relation. A genuinely ended and later resumed relationship remains separate temporal episodes.
 

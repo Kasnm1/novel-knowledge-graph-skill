@@ -184,6 +184,12 @@ class ChapterAuditTests(unittest.TestCase):
         errors, _ = run(frag)
         self.assertTrue(any("frenemy_of" in e for e in errors))
 
+    def test_unknown_stance_is_rejected(self) -> None:
+        frag = fragment()
+        frag["relations"][0]["observations"] = [{"chapter": 2, "stance": "frosty", "evidence_ids": ["ev1"]}]
+        errors, _ = run(frag)
+        self.assertTrue(any("stance" in e for e in errors))
+
     def test_level_axis_applicability_and_value_shape(self) -> None:
         frag = fragment()
         frag["state_changes"].append({

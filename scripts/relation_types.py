@@ -63,6 +63,14 @@ GROUP_LABELS: dict[str, str] = {
     "other": "其他",
 }
 
+# How one side currently regards the other inside a relation episode. An attitude
+# shift (sworn friends turning contemptuous) is an observation on the same relation,
+# not a new relation; `observations[].stance` makes it replayable by chapter.
+STANCES: dict[str, str] = {
+    "intimate": "亲密", "warm": "亲近", "respectful": "敬重", "neutral": "中立", "wary": "戒备",
+    "cold": "冷淡", "contempt": "轻蔑", "hostile": "敌意",
+}
+
 # Reversing source and target does not make a distinct relation for these types.
 # Legacy spellings stay listed so graphs written before the canonical vocabulary
 # still coalesce the same way.
