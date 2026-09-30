@@ -114,12 +114,42 @@ process.exit(0);
 """
 
 
+def structural_failures(html: str) -> list[str]:
+    """Catch markup that parses into an empty body without raising anything.
+
+    A renderer that opens ``<style>`` and never closes it produces a file where
+    the browser treats every following tag as CSS text: no scripts run, the body
+    is empty, and there are no console errors at all. Regex extraction of the
+    inline script still succeeds, so the Node harness would happily exercise code
+    that a browser never reaches. Assert on the raw text instead.
+    """
+    problems: list[str] = []
+    for open_tag, close_tag in (("<style", "</style>"), ("<body", "</body>"),
+                                ("<script", "</script>"), ("<html", "</html>")):
+        opens = html.count(open_tag)
+        closes = html.count(close_tag)
+        if opens != closes:
+            problems.append(f"unbalanced {open_tag}> tags: {opens} open vs {closes} closed")
+    if "<body" not in html:
+        problems.append("no <body> tag in the emitted file")
+    # The two renderers name their containers differently, so only require the
+    # unified generator's markers when this actually is a unified page.
+    is_unified = "const B=" in html
+    markers = ["const B="] if is_unified else ["const graph="]
+    if is_unified:
+        markers += ['id="main"', 'id="tabs"']
+    for required in markers:
+        if required not in html:
+            problems.append(f"emitted file is missing {required!r}")
+    return problems
+
+
 def extract_app_script(html: str) -> str:
     scripts = APP_SCRIPT_RE.findall(html)
     for script in reversed(scripts):
-        if "const graph=" in script:
+        if "const graph=" in script or "const B=" in script:
             return script
-    raise SystemExit("no inline dashboard script found (expected one containing 'const graph=')")
+    raise SystemExit("no inline dashboard script found (expected one containing 'const B=' or 'const graph=')")
 
 
 def main() -> int:
@@ -134,6 +164,13 @@ def main() -> int:
         raise SystemExit("node is required for the dashboard smoke test but was not found on PATH")
 
     html = args.dashboard.resolve().read_text(encoding="utf-8")
+    structural = structural_failures(html)
+    if structural:
+        print(f"# dashboard smoke test: {args.dashboard}")
+        print("\n# STRUCTURAL FAILURES (page would render empty in a browser)")
+        for problem in structural:
+            print(f"- {problem}")
+        return 1
     app = extract_app_script(html)
     probes = args.entity or []
     if not probes:

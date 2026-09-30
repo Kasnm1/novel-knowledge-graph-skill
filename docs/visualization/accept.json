@@ -1,0 +1,3018 @@
+{
+  "blocks": {
+    "chapters": {
+      "id": "block-chapter_summaries",
+      "sec": "chapters",
+      "title": "章节梗概",
+      "chars": 3062
+    },
+    "rhythm": {
+      "id": "",
+      "sec": "rhythm",
+      "title": "节奏 · 事件密度最高的章节",
+      "chars": 386
+    },
+    "coverage": {
+      "id": "",
+      "sec": "coverage",
+      "title": "覆盖台账",
+      "chars": 217
+    },
+    "rules": {
+      "id": "",
+      "sec": "rules",
+      "title": "世界观规则与设定",
+      "chars": 1239
+    },
+    "graph": {
+      "id": "block-graph",
+      "sec": "graph",
+      "title": "关系图谱",
+      "chars": 201
+    },
+    "levels": {
+      "id": "block-level_axis",
+      "sec": "levels",
+      "title": "境界与等级体系",
+      "chars": 582
+    },
+    "agents": {
+      "id": "block-entities",
+      "sec": "agents",
+      "title": "人物 · 势力 · 生灵",
+      "chars": 3596
+    },
+    "milestones": {
+      "id": "",
+      "sec": "milestones",
+      "title": "关键事件",
+      "chars": 2918
+    },
+    "items": {
+      "id": "block-items",
+      "sec": "items",
+      "title": "法器物品",
+      "chars": 1537
+    },
+    "skills": {
+      "id": "block-skills",
+      "sec": "skills",
+      "title": "法术与技能",
+      "chars": 1510
+    },
+    "concepts": {
+      "id": "block-concepts",
+      "sec": "concepts",
+      "title": "设定与概念",
+      "chars": 1460
+    },
+    "romance": {
+      "id": "",
+      "sec": "romance",
+      "title": "感情线 · 截至第 999 章",
+      "chars": 1707
+    },
+    "foreshadow": {
+      "id": "",
+      "sec": "foreshadow",
+      "title": "伏笔 · 尚未回收 273 条",
+      "chars": 2624
+    },
+    "commitments": {
+      "id": "",
+      "sec": "commitments",
+      "title": "承诺与约定",
+      "chars": 1509
+    },
+    "intimacy": {
+      "id": "",
+      "sec": "intimacy",
+      "title": "亲密记录 · 截至第 999 章",
+      "chars": 648
+    },
+    "issues": {
+      "id": "",
+      "sec": "issues",
+      "title": "待人工核对事项",
+      "chars": 1849
+    }
+  },
+  "errors": [],
+  "perf": {
+    "drag_ms": {
+      "n": 34,
+      "p50": 61.0,
+      "p95": 75.9,
+      "max": 76.1
+    },
+    "drag_frame_ms": {
+      "n": 34,
+      "p50": 69.5,
+      "p95": 83.5,
+      "max": 90.2
+    },
+    "drag_ms_repeat": {
+      "n": 34,
+      "p50": 61.4,
+      "p95": 71.1,
+      "max": 73.7
+    },
+    "drag_frame_ms_repeat": {
+      "n": 34,
+      "p50": 69.5,
+      "p95": 83.3,
+      "max": 83.4
+    },
+    "drag_ms_third": {
+      "n": 34,
+      "p50": 62.3,
+      "p95": 78,
+      "max": 86.6
+    },
+    "drag_frame_ms_third": {
+      "n": 34,
+      "p50": 69.6,
+      "p95": 90.2,
+      "max": 90.4
+    },
+    "drag_within_session_spread": {
+      "p50": 1.3,
+      "p95": 6.9,
+      "max": 12.9
+    },
+    "drag_p95_median_of_3": 75.9,
+    "drag_frame_within_session_spread": {
+      "p50": 0.1,
+      "p95": 6.9,
+      "max": 7.0
+    },
+    "drag_frame_p95_median_of_3": 83.5,
+    "drag_p50_drift_ms": 0.4,
+    "render_ms_warmup": [
+      {
+        "n": 10,
+        "p50": 106.4,
+        "p95": 114.5,
+        "max": 114.5
+      },
+      {
+        "n": 10,
+        "p50": 79.1,
+        "p95": 85.3,
+        "max": 85.3
+      }
+    ],
+    "render_ms_first_visit": {
+      "n": 10,
+      "p50": 106.4,
+      "p95": 114.5,
+      "max": 114.5
+    },
+    "render_ms_first_visit_frame": {
+      "n": 10,
+      "p50": 118.0,
+      "p95": 125.1,
+      "max": 125.1
+    },
+    "render_ms_first_visit_note": "one observation per session by construction: the cost is paid by the first pass that paints these chapters, so it cannot be repeated on the same page, and no within-session spread can be quoted for it",
+    "render_ms": {
+      "n": 10,
+      "p50": 78.3,
+      "p95": 98.3,
+      "max": 98.3
+    },
+    "render_ms_frame": {
+      "n": 10,
+      "p50": 90.3,
+      "p95": 111.2,
+      "max": 111.2
+    },
+    "render_ms_repeat": {
+      "n": 10,
+      "p50": 81.6,
+      "p95": 94.6,
+      "max": 94.6
+    },
+    "render_ms_repeat_frame": {
+      "n": 10,
+      "p50": 97.2,
+      "p95": 111.1,
+      "max": 111.1
+    },
+    "render_ms_third": {
+      "n": 10,
+      "p50": 77.5,
+      "p95": 83.7,
+      "max": 83.7
+    },
+    "render_ms_third_frame": {
+      "n": 10,
+      "p50": 90.3,
+      "p95": 104.2,
+      "max": 104.2
+    },
+    "render_within_session_spread": {
+      "p50": 4.1,
+      "p95": 14.6,
+      "max": 14.6
+    },
+    "render_frame_within_session_spread": {
+      "p50": 6.9,
+      "p95": 7.0,
+      "max": 7.0
+    },
+    "render_ms_budget": null,
+    "render_ms_budget_note": "no budget applied. AGENTS.md item 7 lists three interactions to measure and gives two budgets; the scrub is the interaction its 100 ms clause names, and the gate asserts the clause on the scrub (js and frame spans). A wide-step chapter update is not one of the three interactions. Measured here, steady: js p95 98.3 ms, frame p95 111.2 ms; first visit in this session: js p95 114.5 ms, frame p95 125.1 ms.",
+    "render_p50_drift_ms": 3.3,
+    "render_liveness_floor_ms": 15.2
+  },
+  "checks": [],
+  "open_questions": [
+    "AGENTS.md item 7 lists three interactions to measure and gives two budgets, the first being 默认视图章节更新 p95 <= 100 ms. A scrub is one sample of that quantity and a wide-step chapter update (a chapter link, a deep link, a typed chapter number) is another, and the two samples are not the same size — MEASURED this session, the scrub reads js p95 75.9 / frame p95 83.5 ms over 34 consecutive frames, while the wide step reads js p95 98.3 / frame p95 111.2 ms steady (OVER the 100 ms clause at 111.2 ms) and js p95 114.5 / frame p95 125.1 ms on the first visit to those chapters (OVER the 100 ms clause at 125.1 ms). The reading therefore decides the verdict: the scenario the item names passes with 16.5 ms of margin on the frame span, and a clause read as covering any default-view chapter update does not. The gate asserts the clause on the scrub, the interaction the item names, and does not decide the other. The first visit is one observation per session by construction and cannot be repeated on the same page. Proposal for the owner, who owns the wording: give wide-step updates a budget of their own, or say the clause covers them — the figures above are what it would have to cover."
+  ],
+  "machine": {
+    "when": "2026-09-22 18:23:41",
+    "mem_load_pct": 81,
+    "mem_total_gb": 31.8,
+    "mem_avail_gb": 6.0
+  },
+  "load_ms": 3908,
+  "ready": true,
+  "counts": {
+    "entities": 980,
+    "relations": 100,
+    "cards": 117,
+    "chapters": 999,
+    "stats": 10,
+    "cyNodes": 0,
+    "cyEdges": 0
+  },
+  "graph_after_scroll": {
+    "cyNodes": 640,
+    "cyEdges": 782,
+    "legend": 8
+  },
+  "stream_chars": 25258,
+  "drawer_open": false,
+  "snake_tokens": [],
+  "stat_strip": {
+    "items": 10,
+    "rows": 2,
+    "counts": [
+      5,
+      5
+    ],
+    "cols": 5
+  },
+  "untranslated_enums": {},
+  "vocab_sampled": {
+    "event_types": {
+      "kind": "enum",
+      "total": 41,
+      "checked": 41,
+      "skipped_nonlatin": 0
+    },
+    "relations": {
+      "kind": "enum",
+      "total": 42,
+      "checked": 42,
+      "skipped_nonlatin": 0
+    },
+    "foreshadow_statuses": {
+      "kind": "enum",
+      "total": 5,
+      "checked": 5,
+      "skipped_nonlatin": 0
+    },
+    "commitment_kinds": {
+      "kind": "enum",
+      "total": 5,
+      "checked": 5,
+      "skipped_nonlatin": 0
+    },
+    "intimacy_act_types": {
+      "kind": "enum",
+      "total": 19,
+      "checked": 19,
+      "skipped_nonlatin": 0
+    },
+    "item_roles": {
+      "kind": "enum",
+      "total": 4,
+      "checked": 4,
+      "skipped_nonlatin": 0
+    },
+    "entity_tags": {
+      "kind": "freetext",
+      "total": 175,
+      "checked": 5,
+      "skipped_nonlatin": 170
+    }
+  },
+  "drawer": {
+    "char_qin_chao": {
+      "open": true,
+      "chars": 80516,
+      "head": "秦朝 | 人物 | × | 第 1 章登场 · 截至第 999 章 · 又称 秦受、秦哥、山寨老公、保安主任 |  | 廖家大保镖，金刚不坏之躯与意念双修，连毙钟良国、于帆，名震东川黑道 |  | 固定属性 | ",
+      "sections": [
+        "固定属性",
+        "境界 · 截至第 999 章",
+        "人物特征",
+        "状态变化",
+        "关系 · 截至第 999 章",
+        "持有 · 使用 · 保管",
+        "承诺与约定",
+        "相关伏笔",
+        "亲密记录",
+        "感情线"
+      ]
+    },
+    "axis_jiuchongtian": {
+      "open": true,
+      "chars": 1148,
+      "head": "← 返回 | 来自 秦朝 | 九重天 | 等级体系 | × | 第 13 章登场 · 截至第 999 章 |  | 塑胎/炼气/凝神/筑基/神通/化婴/金身/雷劫/飞仙 |  | 固定属性 | 单位\t重 | 分级\t塑胎1/炼",
+      "sections": [
+        "固定属性",
+        "分级",
+        "档位说明",
+        "在该体系上的进阶记录 · 截至第 999 章",
+        "体系换算"
+      ]
+    },
+    "axis_modao_level": {
+      "open": true,
+      "chars": 551,
+      "head": "← 返回 | 来自 九重天 · 第 2 层 | 魔道九阶 | 等级体系 | × | 第 13 章登场 · 截至第 999 章 |  | 魔头/魔魂/魔灵/魔罗/魔妖/魔主/魔王/魔皇/魔神 |  | 固定属性 | 单位\t",
+      "sections": [
+        "固定属性",
+        "分级",
+        "在该体系上的进阶记录 · 截至第 999 章",
+        "体系换算"
+      ]
+    },
+    "axis_faqi_grade": {
+      "open": true,
+      "chars": 536,
+      "head": "← 返回 | 来自 魔道九阶 · 第 3 层 | 法器品级 | 等级体系 | × | 第 23 章登场 · 截至第 999 章 · 又称 法器品第 |  | 人器/地器/天器九品制 |  | 固定属性 | 单位\t品 | 越高",
+      "sections": [
+        "固定属性",
+        "档位说明",
+        "在该体系上的进阶记录 · 截至第 999 章"
+      ]
+    }
+  },
+  "drawer_stays_closed": {
+    "open": false,
+    "chars": 0
+  },
+  "library": {
+    "err": null,
+    "total": "279",
+    "rendered": 48,
+    "hasMore": false,
+    "hiddenId": "char_yang_shu",
+    "hiddenName": "杨树",
+    "foundAfterSearch": true,
+    "moreGoneWhenFiltered": true,
+    "restored": 48,
+    "orgCards": 48,
+    "orgLive": 49,
+    "orgTotal": 49,
+    "orgChipCount": 49
+  },
+  "paging": {
+    "hasNext": true,
+    "page1Rows": 20,
+    "page2Rows": 20,
+    "overlap": 0,
+    "info": "第 21–40 条 / 共 999 条",
+    "totalUnfiltered": 999,
+    "totalImpossible": 0,
+    "rowsImpossible": 0,
+    "inputSurvivesRepaint": true,
+    "inputKeepsValue": "没有这个章节",
+    "totalRestored": 999
+  },
+  "navigation": {
+    "opened": true,
+    "name0": "秦朝",
+    "hasRelLink": true,
+    "name1": "苏姬",
+    "pushed": true,
+    "navVisible": true,
+    "backBtn": true,
+    "nameAfterBack": "秦朝",
+    "navAfterBack": false,
+    "hasChapterLink": true,
+    "chapterAfterClick": "939",
+    "chapterWanted": "939"
+  },
+  "rail": {
+    "#/char/char_qin_chao": {
+      "route": "#/char/char_qin_chao",
+      "headings": [
+        "sec-net",
+        "sec-roles",
+        "sec-changes",
+        "sec-traits",
+        "sec-rel",
+        "sec-events",
+        "sec-attr",
+        "sec-tags",
+        "sec-full"
+      ],
+      "rows": [
+        "sec-net",
+        "sec-roles",
+        "sec-changes",
+        "sec-traits",
+        "sec-rel",
+        "sec-events",
+        "sec-attr",
+        "sec-tags",
+        "sec-full"
+      ],
+      "absent": [],
+      "missing": [],
+      "ids": [
+        "sec-net",
+        "sec-roles",
+        "sec-changes",
+        "sec-traits",
+        "sec-rel",
+        "sec-events",
+        "sec-attr",
+        "sec-tags",
+        "sec-full"
+      ],
+      "moved": 21807,
+      "movedFrom": "sec-full",
+      "movedTo": 21807,
+      "maxScroll": 21807,
+      "noRoom": false,
+      "verified": 9,
+      "noFlash": [],
+      "drawerRows": [],
+      "drawerAbsent": [],
+      "raw": {
+        "view": "entity",
+        "paged": true,
+        "railLen": 899,
+        "railHead": "<button class=\"rt\" data-rail-group=\"PAGE\" aria-expanded=\"true\" title=\"",
+        "secIds": [
+          "sec-net",
+          "sec-roles",
+          "sec-changes",
+          "sec-traits",
+          "sec-rel",
+          "sec-events",
+          "sec-attr",
+          "sec-tags",
+          "sec-full"
+        ],
+        "rowIds": [
+          "sec-net",
+          "sec-roles",
+          "sec-changes",
+          "sec-traits",
+          "sec-rel",
+          "sec-events",
+          "sec-attr",
+          "sec-tags",
+          "sec-full"
+        ]
+      },
+      "scrolled": 21807
+    },
+    "#/index/item": {
+      "route": "#/index/item",
+      "headings": [
+        "ixg-第-1-125-章",
+        "ixg-第-126-250-章",
+        "ixg-第-251-375-章",
+        "ixg-第-376-500-章",
+        "ixg-第-501-625-章",
+        "ixg-第-626-750-章",
+        "ixg-第-751-875-章",
+        "ixg-第-876-999-章"
+      ],
+      "rows": [
+        "ixg-第-1-125-章",
+        "ixg-第-126-250-章",
+        "ixg-第-251-375-章",
+        "ixg-第-376-500-章",
+        "ixg-第-501-625-章",
+        "ixg-第-626-750-章",
+        "ixg-第-751-875-章",
+        "ixg-第-876-999-章"
+      ],
+      "absent": [],
+      "missing": [],
+      "ids": [
+        "ixg-第-1-125-章",
+        "ixg-第-126-250-章",
+        "ixg-第-251-375-章",
+        "ixg-第-376-500-章",
+        "ixg-第-501-625-章",
+        "ixg-第-626-750-章",
+        "ixg-第-751-875-章",
+        "ixg-第-876-999-章"
+      ],
+      "moved": 3575,
+      "movedFrom": "ixg-第-876-999-章",
+      "movedTo": 3575,
+      "maxScroll": 3575,
+      "noRoom": false,
+      "verified": 8,
+      "noFlash": [],
+      "drawerRows": [],
+      "drawerAbsent": [],
+      "raw": {
+        "view": "index",
+        "paged": true,
+        "railLen": 860,
+        "railHead": "<button class=\"rt\" data-rail-group=\"PAGE\" aria-expanded=\"true\" title=\"",
+        "secIds": [
+          "ixg-第-1-125-章",
+          "ixg-第-126-250-章",
+          "ixg-第-251-375-章",
+          "ixg-第-376-500-章",
+          "ixg-第-501-625-章",
+          "ixg-第-626-750-章",
+          "ixg-第-751-875-章",
+          "ixg-第-876-999-章"
+        ],
+        "rowIds": [
+          "ixg-第-1-125-章",
+          "ixg-第-126-250-章",
+          "ixg-第-251-375-章",
+          "ixg-第-376-500-章",
+          "ixg-第-501-625-章",
+          "ixg-第-626-750-章",
+          "ixg-第-751-875-章",
+          "ixg-第-876-999-章"
+        ]
+      },
+      "scrolled": 3575
+    },
+    "#/chapter/251": {
+      "route": "#/chapter/251",
+      "headings": [
+        "ch-summary",
+        "ch-events",
+        "ch-rel",
+        "ch-traits",
+        "ch-people",
+        "ch-review"
+      ],
+      "rows": [
+        "ch-summary",
+        "ch-events",
+        "ch-rel",
+        "ch-traits",
+        "ch-people",
+        "ch-review"
+      ],
+      "absent": [],
+      "missing": [],
+      "ids": [
+        "ch-summary",
+        "ch-events",
+        "ch-rel",
+        "ch-traits",
+        "ch-people",
+        "ch-review"
+      ],
+      "moved": 134,
+      "movedFrom": "ch-review",
+      "movedTo": 134,
+      "maxScroll": 134,
+      "noRoom": false,
+      "verified": 6,
+      "noFlash": [],
+      "drawerRows": [],
+      "drawerAbsent": [],
+      "raw": {
+        "view": "chapter",
+        "paged": true,
+        "railLen": 576,
+        "railHead": "<button class=\"rt\" data-rail-group=\"PAGE\" aria-expanded=\"true\" title=\"",
+        "secIds": [
+          "ch-summary",
+          "ch-events",
+          "ch-rel",
+          "ch-traits",
+          "ch-people",
+          "ch-review"
+        ],
+        "rowIds": [
+          "ch-summary",
+          "ch-events",
+          "ch-rel",
+          "ch-traits",
+          "ch-people",
+          "ch-review"
+        ]
+      },
+      "scrolled": 134
+    },
+    "#/event/event_f26_001": {
+      "route": "#/event/event_f26_001",
+      "headings": [
+        "ev-facts",
+        "ev-story",
+        "ev-evidence",
+        "ev-traits",
+        "ev-siblings"
+      ],
+      "rows": [
+        "ev-facts",
+        "ev-story",
+        "ev-evidence",
+        "ev-traits",
+        "ev-siblings"
+      ],
+      "absent": [],
+      "missing": [],
+      "ids": [
+        "ev-facts",
+        "ev-story",
+        "ev-evidence",
+        "ev-traits",
+        "ev-siblings"
+      ],
+      "moved": 1167,
+      "movedFrom": "ev-siblings",
+      "movedTo": 1167,
+      "maxScroll": 1167,
+      "noRoom": false,
+      "verified": 5,
+      "noFlash": [],
+      "drawerRows": [],
+      "drawerAbsent": [],
+      "raw": {
+        "view": "event",
+        "paged": true,
+        "railLen": 480,
+        "railHead": "<button class=\"rt\" data-rail-group=\"PAGE\" aria-expanded=\"true\" title=\"",
+        "secIds": [
+          "ev-facts",
+          "ev-story",
+          "ev-evidence",
+          "ev-traits",
+          "ev-siblings"
+        ],
+        "rowIds": [
+          "ev-facts",
+          "ev-story",
+          "ev-evidence",
+          "ev-traits",
+          "ev-siblings"
+        ]
+      },
+      "scrolled": 1167
+    }
+  },
+  "palette": {
+    "hasButton": true,
+    "opened": true,
+    "hasInput": true,
+    "entityHits": [
+      {
+        "name": "苏姬",
+        "sub": "人物"
+      },
+      {
+        "name": "嵩山宝台寺住持",
+        "sub": "人物"
+      },
+      {
+        "name": "佛珠驱散魔神神识",
+        "sub": "第 1 章 · 剧情"
+      },
+      {
+        "name": "苏姬缴费并安排工作",
+        "sub": "第 2 章 · 剧情"
+      },
+      {
+        "name": "苏姬收起佛珠主动让女鬼附体实为测试",
+        "sub": "第 27 章 · 剧情"
+      },
+      {
+        "name": "苏姬智斗王燕夫妇",
+        "sub": "第 33 章 · 剧情"
+      },
+      {
+        "name": "苏姬揭示佛门弟子身份与佛珠来历",
+        "sub": "第 51 章 · 剧情"
+      },
+      {
+        "name": "苏姬为秦朝引导凝神",
+        "sub": "第 51 章 · 剧情"
+      },
+      {
+        "name": "黄天梁保释秦朝出警局",
+        "sub": "第 54 章 · 剧情"
+      },
+      {
+        "name": "医院表白，苏姬答应当女友",
+        "sub": "第 73 章 · 剧情"
+      },
+      {
+        "name": "第 34 章",
+        "sub": "第 34 章 · 梗概"
+      },
+      {
+        "name": "我是和尚你尼姑",
+        "sub": "第 51 章 · 梗概"
+      },
+      {
+        "name": "一张嘴五十万",
+        "sub": "第 57 章 · 梗概"
+      },
+      {
+        "name": "冤家路窄啊",
+        "sub": "第 58 章 · 梗概"
+      },
+      {
+        "name": "别来惹我",
+        "sub": "第 60 章 · 梗概"
+      },
+      {
+        "name": "第 63 章",
+        "sub": "第 63 章 · 梗概"
+      },
+      {
+        "name": "第 76 章",
+        "sub": "第 76 章 · 梗概"
+      },
+      {
+        "name": "你们都是花拳绣腿",
+        "sub": "第 81 章 · 梗概"
+      },
+      {
+        "name": "苏姬为何身怀佛门法器",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "苏姬手腕佛珠的来历",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "苏姬之兄为家产与赌债暗害妹妹",
+        "sub": "伏笔 · 已有推进"
+      },
+      {
+        "name": "苏家兄妹反目与家产之争",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "释放大师真实身份成谜",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "苏南市僵尸王出世",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "准岳父苏显秦驾临",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "苏姬立誓报仇与鬼夫妻之约",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "苏姬见秦朝似被雷劈死，发誓待自己渡雷劫成大神通之日，手刃",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "苏姬濒死遗言要秦朝替她照顾姐姐苏妃；秦朝在她\"死后\"含泪",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "苏姬答应将沈清日后送来的女儿秦樱视为己出抚养，要秦樱叫自",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "苏姬作为黑暗教皇，须抓紧找到剩余三名七美德骑士人选，凑齐",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "苏姬决定接受骷髅和谈邀请，周末亲赴公海科林斯号餐厅赴宴，",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "得知苏姬被阎罗门重伤后，秦朝当众立誓：不灭阎罗门满门，誓",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "秦朝安抚苏姬，承诺独自把被诱拐的秦樱找回来，让苏姬留守布",
+        "sub": "承诺 · fulfilled"
+      },
+      {
+        "name": "凯尔因秦朝抢走苏姬，誓言要让秦朝下地狱；先在派对酒中下药",
+        "sub": "承诺 · 有效"
+      },
+      {
+        "name": "出院分佛珠，阴阳铃定为地器九品",
+        "sub": "第 76 章 · 剧情"
+      },
+      {
+        "name": "交流会韩恩熙照料受伤秦朝",
+        "sub": "第 80 章 · 剧情"
+      },
+      {
+        "name": "苏姬奔出拥抱出狱的秦朝",
+        "sub": "第 208 章 · 剧情"
+      },
+      {
+        "name": "车内姐妹追问苏妃心事",
+        "sub": "第 210 章 · 剧情"
+      },
+      {
+        "name": "苏姬大婚恶梦、蒋东母亲刘畅连环电话",
+        "sub": "第 580 章 · 剧情"
+      },
+      {
+        "name": "苏姬外缚印擒住秦朝，二人深吻和解",
+        "sub": "第 606 章 · 剧情"
+      }
+    ],
+    "sectionHits": [
+      {
+        "name": "伏笔",
+        "sub": "未决"
+      },
+      {
+        "name": "白虎灵体作第三层祭品",
+        "sub": "伏笔 · 已经回收"
+      },
+      {
+        "name": "十阶段灵魂契约——秦朝最后两个愿望将决定灵魂归属",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "李百山真实身份成谜，残心剑阵来历不可说",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "沈东收走谢强魂魄",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "杰克教唆周淑芬谋夺老太太遗产",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "石颖邀约秦朝上海重逢",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "仙魄大补九大魔傀",
+        "sub": "伏笔 · 已有推进"
+      },
+      {
+        "name": "秦朝向凯尔体内种下九幽阴火",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "小白对男人动情即是死期",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "大阴阳邪王剑剑影将满一万",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "吞噬天使之魂可松动金身期桎梏",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "秦朝春节带儿媳回家的最后通牒",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "魔傀须对制造者动情、九魔傀成九幽绝杀阵",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "恶魔变身可吸收同族生命火焰成长",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "可破金刚经的两件至宝：天剑与大梵天蛟龙剪",
+        "sub": "伏笔 · 已有推进"
+      },
+      {
+        "name": "正道闻秦朝入魔，飘渺峰等与之为敌",
+        "sub": "伏笔 · 尚未回收"
+      },
+      {
+        "name": "魔丹吸魂：秦朝与吸血鬼苏姬不能同房",
+        "sub": "伏笔 · 尚未回收"
+      }
+    ],
+    "chapterHits": [
+      {
+        "name": "第 640 章",
+        "sub": "章节"
+      },
+      {
+        "name": "第六百四十章 罗刹门门主",
+        "sub": "第 640 章 · 梗概"
+      }
+    ],
+    "gibberish": [],
+    "emptyMarked": true,
+    "closedAfterPick": true,
+    "drawerChars": 10213,
+    "drawerGrew": true
+  },
+  "keyboard": {
+    "rules": 3,
+    "controls": 211,
+    "legendTabIndex": null
+  },
+  "legend_visibility": {
+    "zone": "character",
+    "before": 340,
+    "drawnBefore": 640,
+    "hasEye": true,
+    "after": 340,
+    "drawnAfter": 300,
+    "rowOff": true,
+    "restoredDrawn": 640,
+    "rowBack": true
+  },
+  "sort": {
+    "hasSelect": true,
+    "opts": [
+      "chapter",
+      "degree",
+      "name"
+    ],
+    "distinct": 2
+  },
+  "category_chips": [
+    "全部\n88",
+    "未分类\n75",
+    "防御术\n1",
+    "佛门咒语\n1",
+    "辅助 · 心法/修炼功法\n1",
+    "附体遁术\n1",
+    "攻击 · 召唤\n1",
+    "九幽法决\n1",
+    "九幽法决第六层\n1",
+    "控制\n1",
+    "木系法术\n1",
+    "融合技\n1",
+    "通用 · 控制\n1",
+    "外家拳\n1",
+    "仙术剑阵\n1"
+  ],
+  "snapshots": [
+    {
+      "chapter": 1,
+      "badge": "第 1 章",
+      "entities": 10,
+      "cards": 9,
+      "per": {
+        "T1": 0,
+        "stat": 0,
+        "chapters": 0,
+        "rhythm": 0,
+        "coverage": 0,
+        "rules": 0,
+        "T2": 0,
+        "graph": 0,
+        "levels": 0,
+        "agents": 6,
+        "milestones": 0,
+        "T3": 0,
+        "items": 2,
+        "skills": 0,
+        "concepts": 1,
+        "TAIL": 0,
+        "romance": 0,
+        "foreshadow": 0,
+        "commitments": 0,
+        "intimacy": 0,
+        "issues": 0
+      },
+      "chars": 2668
+    },
+    {
+      "chapter": 500,
+      "badge": "第 500 章",
+      "entities": 517,
+      "cards": 117,
+      "per": {
+        "T1": 0,
+        "stat": 0,
+        "chapters": 0,
+        "rhythm": 0,
+        "coverage": 0,
+        "rules": 0,
+        "T2": 0,
+        "graph": 0,
+        "levels": 9,
+        "agents": 48,
+        "milestones": 0,
+        "T3": 0,
+        "items": 20,
+        "skills": 20,
+        "concepts": 20,
+        "TAIL": 0,
+        "romance": 0,
+        "foreshadow": 0,
+        "commitments": 0,
+        "intimacy": 0,
+        "issues": 0
+      },
+      "chars": 22657
+    },
+    {
+      "chapter": 999,
+      "badge": "第 999 章",
+      "entities": 980,
+      "cards": 117,
+      "per": {
+        "T1": 0,
+        "stat": 0,
+        "chapters": 0,
+        "rhythm": 0,
+        "coverage": 0,
+        "rules": 0,
+        "T2": 0,
+        "graph": 0,
+        "levels": 9,
+        "agents": 48,
+        "milestones": 0,
+        "T3": 0,
+        "items": 20,
+        "skills": 20,
+        "concepts": 20,
+        "TAIL": 0,
+        "romance": 0,
+        "foreshadow": 0,
+        "commitments": 0,
+        "intimacy": 0,
+        "issues": 0
+      },
+      "chars": 25071
+    }
+  ],
+  "cache": {
+    "size": 48,
+    "limit": 48
+  },
+  "default_labels": {
+    "total": 640,
+    "named": 45,
+    "solid": 45,
+    "sample": [
+      "秦朝",
+      "苏姬",
+      "黑龙会"
+    ]
+  },
+  "sector_hover": {
+    "ok": true,
+    "zone": "character",
+    "named": 367,
+    "loudAtDefault": 0,
+    "rowLit": true,
+    "othersFaded": 273,
+    "zoom": 1,
+    "loudWhenZoomed": 367
+  },
+  "sectors": {
+    "rows": [
+      {
+        "type": "character",
+        "sweep": 132,
+        "count": 425,
+        "pitch": 0.04339
+      },
+      {
+        "type": "location",
+        "sweep": 38.499999999999986,
+        "count": 113,
+        "pitch": 0.04339
+      },
+      {
+        "type": "item",
+        "sweep": 38.20000000000002,
+        "count": 111,
+        "pitch": 0.04339
+      },
+      {
+        "type": "concept",
+        "sweep": 37.30000000000001,
+        "count": 105,
+        "pitch": 0.04339
+      },
+      {
+        "type": "skill",
+        "sweep": 37.099999999999994,
+        "count": 103,
+        "pitch": 0.04339
+      },
+      {
+        "type": "organization",
+        "sweep": 35.099999999999994,
+        "count": 81,
+        "pitch": 0.05492
+      },
+      {
+        "type": "creature",
+        "sweep": 30.60000000000001,
+        "count": 33,
+        "pitch": 0.05492
+      },
+      {
+        "type": "level_axis",
+        "sweep": 11.199999999999989,
+        "count": 9,
+        "pitch": 0.05492
+      }
+    ],
+    "totalSweep": 360.00000000000006,
+    "worstRatio": 0.9997284636147702,
+    "worstPair": [
+      "skill_mo_hua",
+      "skill_yinian"
+    ],
+    "violations": 0,
+    "maxRadius": 0.9684146841616973,
+    "compressed": [
+      [
+        "character",
+        0.04339
+      ],
+      [
+        "location",
+        0.04339
+      ],
+      [
+        "item",
+        0.04339
+      ],
+      [
+        "concept",
+        0.04339
+      ],
+      [
+        "skill",
+        0.04339
+      ]
+    ],
+    "pitch": 0.05492
+  },
+  "routes": {
+    "entity": {
+      "pageHidden": false,
+      "pageChars": 16494,
+      "streamHidden": true,
+      "bodyPaged": true,
+      "title": "秦朝",
+      "routeView": "entity",
+      "blocks": 9
+    },
+    "chapter": {
+      "pageHidden": false,
+      "pageChars": 549,
+      "streamHidden": true,
+      "bodyPaged": true,
+      "title": "第 500 章",
+      "routeView": "chapter",
+      "blocks": 6
+    },
+    "index": {
+      "pageHidden": false,
+      "pageChars": 29273,
+      "streamHidden": true,
+      "bodyPaged": true,
+      "title": "人物索引",
+      "routeView": "index",
+      "blocks": 0
+    },
+    "event": {
+      "pageHidden": false,
+      "pageChars": 1160,
+      "streamHidden": true,
+      "bodyPaged": true,
+      "title": "秦朝魔傀群战罗如梦",
+      "routeView": "event",
+      "blocks": 5
+    }
+  },
+  "graph_modes": {
+    "sector": {
+      "cyHidden": false,
+      "nodes": 640,
+      "edges": 782,
+      "treeRows": 0,
+      "pressed": [
+        "sector"
+      ],
+      "text": 69
+    },
+    "mind": {
+      "cyHidden": false,
+      "nodes": 67,
+      "edges": 116,
+      "treeRows": 0,
+      "pressed": [
+        "mind"
+      ],
+      "text": 25
+    },
+    "flow": {
+      "cyHidden": false,
+      "nodes": 84,
+      "edges": 72,
+      "treeRows": 0,
+      "pressed": [
+        "flow"
+      ],
+      "text": 13
+    },
+    "tree": {
+      "cyHidden": false,
+      "nodes": 0,
+      "edges": 0,
+      "treeRows": 124,
+      "pressed": [
+        "tree"
+      ],
+      "text": 1338
+    }
+  },
+  "labels": {
+    "valign": "bottom",
+    "marginY": "3px",
+    "wrap": "wrap",
+    "maxWidth": "84px",
+    "order": null
+  },
+  "label_overlap": {
+    "labelled": 45,
+    "hits": 0,
+    "sample": []
+  },
+  "sidebar": {
+    "position": "fixed",
+    "display": "flex",
+    "sideRight": 266,
+    "mainLeft": 292,
+    "overlapPx": -26,
+    "mainWidth": 1362,
+    "sideWidth": 266,
+    "shellPadLeft": "26px"
+  },
+  "index_pages": {
+    "checked": [
+      "char",
+      "loc",
+      "org",
+      "creature",
+      "axis",
+      "item",
+      "skill",
+      "concept"
+    ],
+    "empty": []
+  },
+  "index_grouping": {
+    "char": {
+      "groups": 3,
+      "sizes": [
+        44,
+        174,
+        207
+      ],
+      "heads": [
+        "主要人物",
+        "次要人物",
+        "过场人物"
+      ],
+      "cards": 425,
+      "jumps": 0
+    },
+    "loc": {
+      "groups": 8,
+      "sizes": [
+        18,
+        11,
+        11,
+        13,
+        14,
+        9,
+        11,
+        26
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 113,
+      "jumps": 8
+    },
+    "org": {
+      "groups": 8,
+      "sizes": [
+        25,
+        7,
+        12,
+        5,
+        10,
+        3,
+        4,
+        15
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 81,
+      "jumps": 8
+    },
+    "creature": {
+      "groups": 8,
+      "sizes": [
+        2,
+        3,
+        7,
+        5,
+        5,
+        3,
+        1,
+        7
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 33,
+      "jumps": 8
+    },
+    "axis": {
+      "groups": 4,
+      "sizes": [
+        5,
+        1,
+        2,
+        1
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章"
+      ],
+      "cards": 9,
+      "jumps": 4
+    },
+    "item": {
+      "groups": 8,
+      "sizes": [
+        17,
+        14,
+        16,
+        16,
+        18,
+        12,
+        6,
+        12
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 111,
+      "jumps": 8
+    },
+    "skill": {
+      "groups": 8,
+      "sizes": [
+        14,
+        13,
+        20,
+        9,
+        11,
+        6,
+        10,
+        20
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 103,
+      "jumps": 8
+    },
+    "concept": {
+      "groups": 8,
+      "sizes": [
+        20,
+        3,
+        23,
+        11,
+        13,
+        12,
+        9,
+        14
+      ],
+      "heads": [
+        "第 1–125 章",
+        "第 126–250 章",
+        "第 251–375 章",
+        "第 376–500 章",
+        "第 501–625 章",
+        "第 626–750 章",
+        "第 751–875 章",
+        "第 876–999 章"
+      ],
+      "cards": 105,
+      "jumps": 8
+    }
+  },
+  "node_colour": {
+    "byType": {
+      "character": {
+        "91,81,214": 367
+      },
+      "organization": {
+        "15,116,148": 74
+      },
+      "creature": {
+        "11,128,113": 20
+      },
+      "item": {
+        "172,99,6": 69
+      },
+      "concept": {
+        "100,108,126": 37
+      },
+      "location": {
+        "52,133,81": 41
+      },
+      "skill": {
+        "144,70,160": 31
+      },
+      "level_axis": {
+        "184,67,11": 1
+      }
+    },
+    "legend": [
+      {
+        "z": "character",
+        "fill": "var(--type-character)"
+      },
+      {
+        "z": "organization",
+        "fill": "var(--type-organization)"
+      },
+      {
+        "z": "creature",
+        "fill": "var(--type-creature)"
+      },
+      {
+        "z": "location",
+        "fill": "var(--type-location)"
+      },
+      {
+        "z": "item",
+        "fill": "var(--type-item)"
+      },
+      {
+        "z": "skill",
+        "fill": "var(--type-skill)"
+      },
+      {
+        "z": "concept",
+        "fill": "var(--type-concept)"
+      },
+      {
+        "z": "level_axis",
+        "fill": "var(--type-level_axis)"
+      }
+    ]
+  },
+  "node_shapes": {
+    "by_type": {
+      "character": "ellipse",
+      "organization": "hexagon",
+      "creature": "diamond",
+      "item": "tag",
+      "concept": "rectangle",
+      "location": "round-rectangle",
+      "skill": "pentagon",
+      "level_axis": "barrel"
+    },
+    "distinct": 8,
+    "legend": [
+      {
+        "z": "character",
+        "svg": true,
+        "prim": "circle"
+      },
+      {
+        "z": "organization",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "creature",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "location",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "item",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "skill",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "concept",
+        "svg": true,
+        "prim": "path"
+      },
+      {
+        "z": "level_axis",
+        "svg": true,
+        "prim": "path"
+      }
+    ]
+  },
+  "sidebar_context": {
+    "#/": {
+      "hasBack": false,
+      "crumbLinks": 0,
+      "upward": 0,
+      "acts": 0,
+      "kinds": 9,
+      "chapters": 20
+    },
+    "#/char/char_qin_chao": {
+      "hasBack": true,
+      "crumbLinks": 2,
+      "upward": 2,
+      "acts": 3,
+      "kinds": 9,
+      "chapters": 20
+    }
+  },
+  "node_pixel_size": {
+    "byType": {
+      "character": {
+        "min": 11,
+        "max": 22
+      },
+      "organization": {
+        "min": 11,
+        "max": 13.6
+      },
+      "creature": {
+        "min": 11,
+        "max": 12.4
+      },
+      "item": {
+        "min": 11,
+        "max": 12.2
+      },
+      "concept": {
+        "min": 11,
+        "max": 12.2
+      },
+      "location": {
+        "min": 11,
+        "max": 12
+      },
+      "skill": {
+        "min": 11,
+        "max": 12
+      },
+      "level_axis": {
+        "min": 11,
+        "max": 11
+      }
+    },
+    "all": {
+      "min": 11,
+      "max": 22
+    },
+    "n": 640
+  },
+  "index_card_line": {
+    "char": {
+      "cards": 425,
+      "withSummary": 424,
+      "distinct": 424,
+      "withRel": 345,
+      "relDistinct": 17,
+      "sample": [
+        "廖家大保镖，金刚不坏之躯与意念双修，连毙钟良国、于帆，名震东川黑道",
+        "秦朝正牌女友，此时在嵩山宝台寺，一通电话恰好打断秦朝与吴欣的卫生间暧昧"
+      ]
+    },
+    "loc": {
+      "cards": 113,
+      "withSummary": 112,
+      "distinct": 112,
+      "withRel": 7,
+      "relDistinct": 2,
+      "sample": [
+        "秦朝毕业后落脚的北方城市，故事主要发生地。",
+        "苏姬的老家，其父苏显秦把她带回景阳市看管。"
+      ]
+    },
+    "org": {
+      "cards": 81,
+      "withSummary": 80,
+      "distinct": 78,
+      "withRel": 67,
+      "relDistinct": 13,
+      "sample": [
+        "国际杀手组织，按客户名单接单刺杀，成员经专业训练，深不可测",
+        "鬼气门派，趁妖兽门势弱欲将其吞并"
+      ]
+    },
+    "creature": {
+      "cards": 33,
+      "withSummary": 32,
+      "distinct": 32,
+      "withRel": 14,
+      "relDistinct": 3,
+      "sample": [
+        "十年/十愿期满后来收走违约者灵魂的地狱之犬",
+        "阎罗门驱使的阴魂，可附体于人，散则化为阴风"
+      ]
+    },
+    "axis": {
+      "cards": 9,
+      "withSummary": 9,
+      "distinct": 9,
+      "withRel": 0,
+      "relDistinct": 0,
+      "sample": [
+        "塑胎/炼气/凝神/筑基/神通/化婴/金身/雷劫/飞仙",
+        "魔头/魔魂/魔灵/魔罗/魔妖/魔主/魔王/魔皇/魔神"
+      ]
+    },
+    "item": {
+      "cards": 111,
+      "withSummary": 110,
+      "distinct": 110,
+      "withRel": 40,
+      "relDistinct": 3,
+      "sample": [
+        "秦朝体内黑色宝剑。",
+        "罗德残魂重铸的防御型地器，秦朝强行催动耗其元气"
+      ]
+    },
+    "skill": {
+      "cards": 103,
+      "withSummary": 103,
+      "distinct": 103,
+      "withRel": 11,
+      "relDistinct": 2,
+      "sample": [
+        "罗德独门绝技，发动时眼中燃幽幽绿火，可看破一切鬼神。秦朝凭罗德残存记忆使用。",
+        "嵩山宝台寺绝学之一，非强攻心法，九大手印各有神妙，修至极处可化身为佛。"
+      ]
+    },
+    "concept": {
+      "cards": 105,
+      "withSummary": 104,
+      "distinct": 104,
+      "withRel": 16,
+      "relDistinct": 3,
+      "sample": [
+        "天生魔体之人，胡箐断定秦朝即是胡丽丽要找的魔丹宿主",
+        "鬼差所属的幽冥世界，有阎罗、无常、奈何桥；囚魂锁以地狱鬼铁精炼而成。"
+      ]
+    }
+  },
+  "mention_channel": {
+    "loc/loc_aoxi_cun": {
+      "has": true,
+      "rows": 3,
+      "chips": 8,
+      "dead": 0,
+      "badRoute": 0,
+      "pageChars": 587
+    },
+    "loc/loc_chao_yang_gong_yuan": {
+      "has": true,
+      "rows": 1,
+      "chips": 3,
+      "dead": 0,
+      "badRoute": 0,
+      "pageChars": 206
+    },
+    "skill/skill_mo_yan": {
+      "has": true,
+      "rows": 10,
+      "chips": 33,
+      "dead": 0,
+      "badRoute": 0,
+      "pageChars": 780
+    },
+    "axis/axis_jiuchongtian": {
+      "has": true,
+      "rows": 2,
+      "chips": 3,
+      "dead": 0,
+      "badRoute": 0,
+      "pageChars": 437
+    },
+    "item/item_baijin_lianhua_zhan": {
+      "has": true,
+      "rows": 27,
+      "chips": 82,
+      "dead": 0,
+      "badRoute": 0,
+      "pageChars": 1942
+    }
+  },
+  "mention_click": {
+    "ok": true,
+    "expected": "char_qin_chao",
+    "name": "秦朝",
+    "drawer": {
+      "open": true,
+      "chars": 80661,
+      "head": "秦朝 人物 × 第 1 章登场 · 截至第 999 章 · 又称 秦受、秦哥、山寨老公、保安主任 廖家大保镖，金刚不坏之躯与意念双修，连毙钟良国、于帆，名震东川黑道 固定属性 性别"
+    }
+  },
+  "mention_audit": {
+    "rows": 108,
+    "withVia": 108,
+    "titleHits": [],
+    "sharedMarked": 104,
+    "samples": [
+      "奥西村",
+      "奥西村",
+      "奥西村",
+      "残心剑阵 ⚠共有名",
+      "残心剑阵 ⚠共有名",
+      "残心剑阵 ⚠共有名",
+      "残心剑阵 ⚠共有名",
+      "残心剑阵 ⚠共有名",
+      "残心剑阵 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "白金莲花斩 ⚠共有名",
+      "金刚经 ⚠共有名",
+      "金刚经 ⚠共有名",
+      "金刚经 ⚠共有名",
+      "金刚经 ⚠共有名",
+      "金刚经 ⚠共有名",
+      "金刚经 ⚠共有名"
+    ],
+    "hasSection": true,
+    "scanned": [
+      "loc/loc_aoxi_cun",
+      "skill/skill_canxin_zhenjian",
+      "item/item_baijin_lianhua_zhan",
+      "skill/skill_jingang_jing"
+    ]
+  },
+  "relation_lifetime": {
+    "total": 823,
+    "withEndChapter": 1,
+    "withObs": 823,
+    "multiIv": 110,
+    "endChapterHonoured": [
+      {
+        "id": "rel_f01_016",
+        "end_chapter": 1,
+        "intervals": 2,
+        "firstTo": 322,
+        "ignored": false
+      }
+    ],
+    "bounded": 147,
+    "holes": [],
+    "uncovered": [],
+    "captions": [
+      {
+        "id": "rel_f01_016",
+        "end": 0,
+        "open": true,
+        "liveAt400": true
+      }
+    ]
+  },
+  "circle_view": {
+    "circles": 74,
+    "members": 500,
+    "isolated": 480,
+    "linked": 500,
+    "components": 19,
+    "giant": 456,
+    "biggest": 112,
+    "singletonCircles": 0,
+    "groups": 74,
+    "overflow": [],
+    "zoom": 0.8676717903955243,
+    "innerEdges": 547,
+    "bridgeEdges": 276,
+    "rings": 75,
+    "captions": 75,
+    "offCanvas": 0,
+    "spineNodes": 0,
+    "isoNodes": 480
+  },
+  "sidebar_controls": {
+    "total": 52,
+    "inert": [],
+    "strays": []
+  },
+  "sidebar_click": {
+    "tested": 45,
+    "inert": [],
+    "unresolved": 0,
+    "hitCap": false
+  },
+  "entity_folds": {
+    "page": "entity",
+    "folds": 16,
+    "withRest": 16,
+    "restChars": 612188,
+    "tocs": 1,
+    "tocRows": 9,
+    "tocBadHref": [],
+    "fullFold": true,
+    "fullChars": 362055,
+    "expandedOk": true,
+    "deadButtons": []
+  },
+  "anchors": {
+    "routes": [
+      {
+        "frag": "#/index/item",
+        "anchors": 118,
+        "bare": 0
+      },
+      {
+        "frag": "#/index/chapter",
+        "anchors": 1009,
+        "bare": 0
+      },
+      {
+        "frag": "#/index/event",
+        "anchors": 1142,
+        "bare": 0
+      },
+      {
+        "frag": "#/chapter/251",
+        "anchors": 15,
+        "bare": 0
+      },
+      {
+        "frag": "#/char/char_qin_chao",
+        "anchors": 2277,
+        "bare": 0
+      },
+      {
+        "frag": "#/event/event_f26_001",
+        "anchors": 32,
+        "bare": 0
+      }
+    ],
+    "bad": [],
+    "jumped": [
+      {
+        "frag": "#/index/item",
+        "stayed": true,
+        "before": "#/index/item",
+        "after": "index",
+        "view": "index"
+      },
+      {
+        "frag": "#/index/chapter",
+        "stayed": true,
+        "before": "#/index/chapter",
+        "after": "index",
+        "view": "index"
+      },
+      {
+        "frag": "#/index/event",
+        "stayed": true,
+        "before": "#/index/event",
+        "after": "index",
+        "view": "index"
+      },
+      {
+        "frag": "#/char/char_qin_chao",
+        "stayed": true,
+        "before": "#/char/char_qin_chao",
+        "after": "entity",
+        "view": "entity"
+      }
+    ]
+  },
+  "index2": [
+    {
+      "frag": "#/index/chapter",
+      "chars": 143477,
+      "groups": 8,
+      "rows": 999,
+      "railRows": 8,
+      "missing": false,
+      "firstHref": "#/chapter/1"
+    },
+    {
+      "frag": "#/index/event",
+      "chars": 181188,
+      "groups": 8,
+      "rows": 1132,
+      "railRows": 8,
+      "missing": false,
+      "firstHref": "#/event/event_f01_001"
+    }
+  ],
+  "chapter_pages": {
+    "pages": [
+      {
+        "n": 1,
+        "secs": 10,
+        "railRows": 10,
+        "scrollRoom": 1519
+      },
+      {
+        "n": 60,
+        "secs": 6,
+        "railRows": 6,
+        "scrollRoom": 258
+      },
+      {
+        "n": 120,
+        "secs": 5,
+        "railRows": 5,
+        "scrollRoom": 0
+      },
+      {
+        "n": 180,
+        "secs": 8,
+        "railRows": 8,
+        "scrollRoom": 564
+      },
+      {
+        "n": 251,
+        "secs": 6,
+        "railRows": 6,
+        "scrollRoom": 134
+      },
+      {
+        "n": 265,
+        "secs": 8,
+        "railRows": 8,
+        "scrollRoom": 1146
+      },
+      {
+        "n": 284,
+        "secs": 1,
+        "railRows": 1,
+        "scrollRoom": 0
+      },
+      {
+        "n": 322,
+        "secs": 7,
+        "railRows": 7,
+        "scrollRoom": 151
+      },
+      {
+        "n": 375,
+        "secs": 7,
+        "railRows": 7,
+        "scrollRoom": 570
+      },
+      {
+        "n": 440,
+        "secs": 7,
+        "railRows": 7,
+        "scrollRoom": 408
+      },
+      {
+        "n": 500,
+        "secs": 6,
+        "railRows": 6,
+        "scrollRoom": 158
+      },
+      {
+        "n": 560,
+        "secs": 5,
+        "railRows": 5,
+        "scrollRoom": 162
+      },
+      {
+        "n": 631,
+        "secs": 9,
+        "railRows": 9,
+        "scrollRoom": 768
+      },
+      {
+        "n": 700,
+        "secs": 9,
+        "railRows": 9,
+        "scrollRoom": 824
+      },
+      {
+        "n": 760,
+        "secs": 6,
+        "railRows": 6,
+        "scrollRoom": 181
+      },
+      {
+        "n": 820,
+        "secs": 4,
+        "railRows": 4,
+        "scrollRoom": 0
+      },
+      {
+        "n": 880,
+        "secs": 6,
+        "railRows": 6,
+        "scrollRoom": 213
+      },
+      {
+        "n": 940,
+        "secs": 8,
+        "railRows": 8,
+        "scrollRoom": 457
+      },
+      {
+        "n": 999,
+        "secs": 4,
+        "railRows": 4,
+        "scrollRoom": 0
+      }
+    ],
+    "emitted": {
+      "ch-summary": 19,
+      "ch-events": 18,
+      "ch-changes": 10,
+      "ch-rel": 12,
+      "ch-traits": 11,
+      "ch-threads": 11,
+      "ch-intimate": 6,
+      "ch-items": 6,
+      "ch-people": 18,
+      "ch-review": 11
+    },
+    "leaks": [],
+    "nav": [
+      {
+        "from": 251,
+        "label": "next",
+        "found": true,
+        "hash": "#/chapter/252",
+        "view": "chapter"
+      },
+      {
+        "from": 251,
+        "label": "prev",
+        "found": true,
+        "hash": "#/chapter/250",
+        "view": "chapter"
+      }
+    ],
+    "shapes": [
+      {
+        "frag": "#/char/char_qin_chao",
+        "chars": 16441,
+        "snake": []
+      },
+      {
+        "frag": "#/event/event_f26_001",
+        "chars": 861,
+        "snake": []
+      },
+      {
+        "frag": "#/index/item",
+        "chars": 6824,
+        "snake": []
+      },
+      {
+        "frag": "#/loc/loc_aoxi_cun",
+        "chars": 587,
+        "snake": []
+      },
+      {
+        "frag": "#/axis/axis_jiuchongtian",
+        "chars": 437,
+        "snake": []
+      }
+    ]
+  },
+  "event_pages": {
+    "pages": [
+      {
+        "id": "event_f01_001",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 2,
+        "missing": false
+      },
+      {
+        "id": "event_f03_01",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f04_007",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f07_002",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f09_004",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f11_007",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f14_003",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f16_008",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f19_004",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f22_003",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f25_003",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f27_011",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f30_006",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f33_003",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f35_006",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f37_016",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f40_001",
+        "secs": 7,
+        "railRows": 7,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f42_009",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "evt_f45_006",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f47_003",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f49_009",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f52_006",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f54_010",
+        "secs": 7,
+        "railRows": 7,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f57_007",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f60_002",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f61_013",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f63_016",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f66_005",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f69_002",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f71_010",
+        "secs": 7,
+        "railRows": 7,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f73_009",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f75_016",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f78_004",
+        "secs": 7,
+        "railRows": 7,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f80_009",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f83_006",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f85_008",
+        "secs": 6,
+        "railRows": 6,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f88_001",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f90_004",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f92_005",
+        "secs": 5,
+        "railRows": 5,
+        "navBtns": 3,
+        "missing": false
+      },
+      {
+        "id": "event_f95_005",
+        "secs": 4,
+        "railRows": 4,
+        "navBtns": 3,
+        "missing": false
+      }
+    ],
+    "emitted": {
+      "ev-facts": 40,
+      "ev-story": 40,
+      "ev-evidence": 40,
+      "ev-changes": 3,
+      "ev-siblings": 40,
+      "ev-intimate": 10,
+      "ev-items": 4,
+      "ev-traits": 11,
+      "ev-threads": 13
+    },
+    "nav": [
+      {
+        "which": "next",
+        "found": true,
+        "from": "#/event/event_f25_003",
+        "to": "#/event/event_f25_004",
+        "view": "event",
+        "moved": true
+      },
+      {
+        "which": "prev",
+        "found": true,
+        "from": "#/event/event_f25_003",
+        "to": "#/event/event_f25_002",
+        "view": "event",
+        "moved": true
+      }
+    ],
+    "locRows": 19,
+    "sampled": 40
+  },
+  "tag_channel": {
+    "rows": [
+      [
+        "axis_jiuchongtian",
+        [
+          [
+            "修炼体系",
+            "修炼体系"
+          ]
+        ]
+      ],
+      [
+        "axis_modao_level",
+        [
+          [
+            "修炼体系",
+            "修炼体系"
+          ]
+        ]
+      ],
+      [
+        "char_chun_jiuniang",
+        [
+          [
+            "九幽",
+            "九幽"
+          ],
+          [
+            "附体",
+            "附体"
+          ],
+          [
+            "mokuui",
+            "墨门"
+          ]
+        ]
+      ],
+      [
+        "char_geng_xin",
+        [
+          [
+            "antagonist",
+            "反派"
+          ]
+        ]
+      ],
+      [
+        "char_luo_de",
+        [
+          [
+            "暗黑生物",
+            "暗黑生物"
+          ]
+        ]
+      ],
+      [
+        "char_luo_rumeng",
+        [
+          [
+            "antagonist",
+            "反派"
+          ],
+          [
+            "mokuui",
+            "墨门"
+          ]
+        ]
+      ],
+      [
+        "char_mo_feiyan",
+        [
+          [
+            "mokuui",
+            "墨门"
+          ],
+          [
+            "assassin",
+            "刺客"
+          ]
+        ]
+      ],
+      [
+        "char_qin_chao",
+        [
+          [
+            "protagonist",
+            "主角"
+          ],
+          [
+            "主角",
+            "主角"
+          ]
+        ]
+      ],
+      [
+        "char_tiandanzi",
+        [
+          [
+            "minor",
+            "配角"
+          ]
+        ]
+      ],
+      [
+        "char_tie_niu",
+        [
+          [
+            "minor",
+            "配角"
+          ]
+        ]
+      ],
+      [
+        "char_ye_wuchang",
+        [
+          [
+            "antagonist",
+            "反派"
+          ]
+        ]
+      ],
+      [
+        "char_zhou_jiangtao",
+        [
+          [
+            "minor",
+            "配角"
+          ]
+        ]
+      ],
+      [
+        "concept_di_yu",
+        [
+          [
+            "世界观",
+            "世界观"
+          ],
+          [
+            "幽冥",
+            "幽冥"
+          ]
+        ]
+      ],
+      [
+        "concept_tian_sheng_mo_ti",
+        [
+          [
+            "世界观",
+            "世界观"
+          ],
+          [
+            "修炼",
+            "修炼"
+          ]
+        ]
+      ],
+      [
+        "creature_guiquan",
+        [
+          [
+            "召唤物",
+            "召唤物"
+          ]
+        ]
+      ],
+      [
+        "creature_shi_wang",
+        [
+          [
+            "阎罗门",
+            "阎罗门"
+          ],
+          [
+            "不死",
+            "不死"
+          ]
+        ]
+      ],
+      [
+        "item_zhaohun_kulou",
+        [
+          [
+            "法器",
+            "法器"
+          ]
+        ]
+      ],
+      [
+        "item_zhen_huo_jiu_long_yin",
+        [
+          [
+            "法器",
+            "法器"
+          ],
+          [
+            "攻击",
+            "攻击"
+          ]
+        ]
+      ],
+      [
+        "loc_haiidao",
+        [
+          [
+            "日本",
+            "日本"
+          ]
+        ]
+      ],
+      [
+        "loc_zha_huang",
+        [
+          [
+            "日本",
+            "日本"
+          ],
+          [
+            "北海道",
+            "北海道"
+          ]
+        ]
+      ],
+      [
+        "org_hei_long_hui",
+        [
+          [
+            "黑社会",
+            "黑社会"
+          ],
+          [
+            "三大家族",
+            "三大家族"
+          ]
+        ]
+      ],
+      [
+        "org_luocha_men",
+        [
+          [
+            "魔道六门",
+            "魔道六门"
+          ]
+        ]
+      ],
+      [
+        "skill_dingjun_shiyi_jian",
+        [
+          [
+            "剑法",
+            "剑法"
+          ],
+          [
+            "御剑术",
+            "御剑术"
+          ]
+        ]
+      ],
+      [
+        "skill_tian_huo_jue",
+        [
+          [
+            "火系",
+            "火系"
+          ],
+          [
+            "昆仑",
+            "昆仑"
+          ]
+        ]
+      ]
+    ],
+    "missing": [],
+    "untranslated": [],
+    "latin_ids": [
+      "char_chun_jiuniang",
+      "char_geng_xin",
+      "char_luo_rumeng",
+      "char_mo_feiyan",
+      "char_qin_chao",
+      "char_tiandanzi",
+      "char_tie_niu",
+      "char_ye_wuchang",
+      "char_zhou_jiangtao"
+    ],
+    "type_reps": {
+      "character": [
+        "char_qin_chao",
+        "char_luo_de"
+      ],
+      "concept": [
+        "concept_tian_sheng_mo_ti",
+        "concept_di_yu"
+      ],
+      "organization": [
+        "org_luocha_men",
+        "org_hei_long_hui"
+      ],
+      "level_axis": [
+        "axis_jiuchongtian",
+        "axis_modao_level"
+      ],
+      "skill": [
+        "skill_dingjun_shiyi_jian",
+        "skill_tian_huo_jue"
+      ],
+      "creature": [
+        "creature_guiquan",
+        "creature_shi_wang"
+      ],
+      "item": [
+        "item_zhaohun_kulou",
+        "item_zhen_huo_jiu_long_yin"
+      ],
+      "location": [
+        "loc_haiidao",
+        "loc_zha_huang"
+      ]
+    },
+    "type_rep_ids": [
+      "axis_jiuchongtian",
+      "axis_modao_level",
+      "char_luo_de",
+      "char_qin_chao",
+      "concept_di_yu",
+      "concept_tian_sheng_mo_ti",
+      "creature_guiquan",
+      "creature_shi_wang",
+      "item_zhaohun_kulou",
+      "item_zhen_huo_jiu_long_yin",
+      "loc_haiidao",
+      "loc_zha_huang",
+      "org_hei_long_hui",
+      "org_luocha_men",
+      "skill_dingjun_shiyi_jian",
+      "skill_tian_huo_jue"
+    ],
+    "tagged_per_type": {
+      "character": 82,
+      "concept": 23,
+      "organization": 13,
+      "level_axis": 3,
+      "skill": 13,
+      "creature": 7,
+      "item": 13,
+      "location": 7
+    },
+    "thin_types": {},
+    "types_without_route": [],
+    "count_mismatch": [],
+    "raw_ascii_on_page": []
+  },
+  "tag_page_ascii_words": [],
+  "tag_page_ascii_words_n": 0,
+  "search_channel": {
+    "rows": [
+      [
+        "花瓶中魔神入体",
+        [
+          "event"
+        ]
+      ],
+      [
+        "盒饭",
+        [
+          "summary"
+        ]
+      ],
+      [
+        "罗德向臭道士复仇",
+        [
+          "thread"
+        ]
+      ],
+      [
+        "秦朝将亲自出手审判方华",
+        [
+          "commit"
+        ]
+      ]
+    ],
+    "missing": [],
+    "wrong_kind": [],
+    "mixed_kinds": [
+      "entity",
+      "event",
+      "summary",
+      "thread",
+      "commit"
+    ],
+    "multi_term": [
+      "event:苏姬缴费并安排工作",
+      "event:苏姬大婚恶梦、蒋东母亲刘畅连环电",
+      "summary:苏姬的法印",
+      "summary:苏姬的反应",
+      "thread:苏姬的一周之约与秦朝赴美接人",
+      "event:秦朝暴走：九幽冥凤附体死战吸血鬼",
+      "summary:我的苏姬",
+      "event:佛珠驱散魔神神识",
+      "event:秦朝夺苏姬手机使她躲过撞碎电话亭",
+      "event:罗茜以地狱大酬宾送秦朝一个愿望并",
+      "event:秦朝淬炼二八自行车使其成人器九品",
+      "event:苏姬揭示佛门弟子身份与佛珠来历",
+      "summary:第 33 章",
+      "summary:我是和尚你尼姑",
+      "summary:热舞的苏姬",
+      "summary:一张嘴五十万",
+      "summary:难缠的和尚",
+      "thread:方华背景强硬，命案或被压下",
+      "thread:苏姬立誓报仇与鬼夫妻之约",
+      "thread:魔丹吸魂：秦朝与吸血鬼苏姬不能同",
+      "thread:人元金丹封作昆仑贡品，须昆仑弟子",
+      "commit:苏姬见秦朝似被雷劈死，发誓待自己",
+      "commit:秦朝安抚苏姬，承诺独自把被诱拐的",
+      "thread:以菩提圣火入九幽阴火修第四层",
+      "thread:苏姬将被苏显秦送出国留学",
+      "thread:苏姬将回苏南市",
+      "commit:苏姬濒死遗言要秦朝替她照顾姐姐苏",
+      "commit:秦朝誓言总有一天把苏姬再接回来",
+      "commit:秦朝发誓绝不让任何人破坏他与苏姬",
+      "commit:秦朝立誓取得三仙丹之一的人元金丹",
+      "commit:秦朝须靠自己正当本事赚到五百万，",
+      "commit:秦朝加入第七科完成任务赚取五百万",
+      "event:苏姬为秦朝引导凝神",
+      "event:东街铁签插混混手",
+      "event:法相误会调戏师妹、楼顶开打",
+      "event:凯尔与凯瑟琳密谋派对上下药栽赃",
+      "event:熙雷符苏姬斩龙：鹰眼断臂坠沙漠、",
+      "event:传送阵被干扰，女恶魔韩冰现身拦路",
+      "summary:给人家疗伤",
+      "summary:让他下地狱"
+    ]
+  },
+  "back_nav": {
+    "error": null,
+    "present": true,
+    "before": "#/char/char_qin_chao",
+    "after": "#/chapter/300",
+    "nav": 118,
+    "moved": true,
+    "returned": true
+  },
+  "prose_fidelity": {
+    "rows": [
+      {
+        "ch": 1,
+        "dataTitle": "都是盒饭惹的祸",
+        "dataSummary": "毕业失业的秦朝深夜在苏南市街头哀嚎求职，被楼上扔下的宋代花瓶砸破头，瓶中老魔神罗德入体认出他是天生魔体。蜀门白衣女弟子御剑夜巡未寻获罗德后离去。秦朝在公园长椅吃盒饭，被苏姬当众唤作老公挡驾富二代杨树，又为救她打跑追来的流氓。苏姬拍他肩膀时腕上佛珠发光，驱散罗德神识，秦朝随即力竭昏倒。",
+        "shownTitle": "都是盒饭惹的祸",
+        "shownSummary": "毕业失业的秦朝深夜在苏南市街头哀嚎求职，被楼上扔下的宋代花瓶砸破头，瓶中老魔神罗德入体认出他是天生魔体。蜀门白衣女弟子御剑夜巡未寻获罗德后离去。秦朝在公园长椅吃盒饭，被苏姬当众唤作老公挡驾富二代杨树，又为救她打跑追来的流氓。苏姬拍他肩膀时腕上佛珠发光，驱散罗德神识，秦朝随即力竭昏倒。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 42,
+        "clientH": 42,
+        "cut": 1
+      },
+      {
+        "ch": 120,
+        "dataTitle": "",
+        "dataSummary": "游乐园里廖莎莎玩旋转木马、嚷着要吃冰淇淋。秦朝在冰淇淋摊偶遇随班集体来的吴欣，吴欣掏湿巾替他擦泥点又贴胸探心跳，被调侃后红脸跑开。只剩一支冰淇淋引发廖莎莎吃醋打闹，三人接着去玩大摆锤。",
+        "shownTitle": null,
+        "shownSummary": "游乐园里廖莎莎玩旋转木马、嚷着要吃冰淇淋。秦朝在冰淇淋摊偶遇随班集体来的吴欣，吴欣掏湿巾替他擦泥点又贴胸探心跳，被调侃后红脸跑开。只剩一支冰淇淋引发廖莎莎吃醋打闹，三人接着去玩大摆锤。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 21,
+        "clientH": 21,
+        "cut": 120
+      },
+      {
+        "ch": 251,
+        "dataTitle": "石鑫的男友",
+        "dataSummary": "天鹰公司包场聚餐，张楚歌打扮一新等李雪并邀她入场。秦朝劝李雪走出亡夫阴影，李雪征询他后才把手交给张楚歌。艾丽思主动挽住秦朝胳膊。石鑫带来男友江磊——市篮球队前锋，江磊一见李雪便惊艳献殷勤。",
+        "shownTitle": "石鑫的男友",
+        "shownSummary": "天鹰公司包场聚餐，张楚歌打扮一新等李雪并邀她入场。秦朝劝李雪走出亡夫阴影，李雪征询他后才把手交给张楚歌。艾丽思主动挽住秦朝胳膊。石鑫带来男友江磊——市篮球队前锋，江磊一见李雪便惊艳献殷勤。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 21,
+        "clientH": 21,
+        "cut": 251
+      },
+      {
+        "ch": 500,
+        "dataTitle": "第五百章 拜见娘家人",
+        "dataSummary": "洛家住在军区大院内，门口有持枪警卫站岗。洛晴琳带秦朝进家门，小保姆小慧接待，洛母却身体不适在楼上。这时其兄洛宇枫少校归来，得知秦朝是妹妹男友，伸手以三成握力试探，见秦朝面不改色接住这一百六十公斤的握力反而意外。",
+        "shownTitle": "第五百章拜见娘家人",
+        "shownSummary": "洛家住在军区大院内，门口有持枪警卫站岗。洛晴琳带秦朝进家门，小保姆小慧接待，洛母却身体不适在楼上。这时其兄洛宇枫少校归来，得知秦朝是妹妹男友，伸手以三成握力试探，见秦朝面不改色接住这一百六十公斤的握力反而意外。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 42,
+        "clientH": 42,
+        "cut": 500
+      },
+      {
+        "ch": 760,
+        "dataTitle": "门派轮番上",
+        "dataSummary": "蜀山掌门谭海亲到，按住爱沈清而恨秦朝的莫天涯。八大门派除青洪无极帮外到齐，秦朝请出立宗碑开始破碑。释法大师率先发难，以降魔咒借阴阳铃把罗德暂时摄出，自掌须弥山掌、六字大明咒攻碑；秦朝单手以白金莲花斩、残心剑阵应对，比试未完。",
+        "shownTitle": "门派轮番上",
+        "shownSummary": "蜀山掌门谭海亲到，按住爱沈清而恨秦朝的莫天涯。八大门派除青洪无极帮外到齐，秦朝请出立宗碑开始破碑。释法大师率先发难，以降魔咒借阴阳铃把罗德暂时摄出，自掌须弥山掌、六字大明咒攻碑；秦朝单手以白金莲花斩、残心剑阵应对，比试未完。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 42,
+        "clientH": 42,
+        "cut": 760
+      },
+      {
+        "ch": 975,
+        "dataTitle": "给你扒鸡蛋",
+        "dataSummary": "韦晓龙被二女冷落后不服，掏五百加到一千要买秦朝座位，商洛接过钱让秦朝让座；韦刚坐下，二女却换到对面男生旁，把他晾在原地。他递上父亲韦一鸣扬帆物流的名片炫耀，被秦朝婉拒。中午李娜拿出母亲煮的茶叶蛋，替秦朝仔细扒壳喂他吃，又把沾在他嘴角的蛋渣捻起放进自己嘴里。",
+        "shownTitle": "给你扒鸡蛋",
+        "shownSummary": "韦晓龙被二女冷落后不服，掏五百加到一千要买秦朝座位，商洛接过钱让秦朝让座；韦刚坐下，二女却换到对面男生旁，把他晾在原地。他递上父亲韦一鸣扬帆物流的名片炫耀，被秦朝婉拒。中午李娜拿出母亲煮的茶叶蛋，替秦朝仔细扒壳喂他吃，又把沾在他嘴角的蛋渣捻起放进自己嘴里。",
+        "clamp": "none",
+        "overflow": "visible",
+        "scrollH": 42,
+        "clientH": 42,
+        "cut": 975
+      }
+    ],
+    "mismatched": [],
+    "clamped": [],
+    "absent": [],
+    "whitespace_only": [
+      [
+        "title",
+        500
+      ]
+    ],
+    "covered": [
+      1,
+      120,
+      251,
+      500,
+      760,
+      975
+    ],
+    "stale": [],
+    "home_view": "home"
+  },
+  "screenshots": {
+    "written": [
+      "atlas-home.png",
+      "atlas-page-char.png",
+      "atlas-page-event.png",
+      "atlas-index-item.png",
+      "atlas-graph-mind.png",
+      "atlas-graph-flow.png",
+      "atlas-graph-tree.png"
+    ],
+    "failed": []
+  }
+}
