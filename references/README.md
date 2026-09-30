@@ -1,31 +1,48 @@
 # Reference map
 
-- `overlapping-timelines-and-membership.md` — normative rendering and data
-  rules for overlapping story arcs and entities that belong to multiple
-  collection views.
-- `visualization.md` — dashboard presentation guidance, including timeline
-  lanes, graph surfaces, and repository cards.
-- `overlap-membership-fixture.json` — tiny regression fixture: overlapping
-  arcs, one entity in three collections, and unique-ID union/intersection
-  expectations.
-# Dashboard and analysis references
+Load references through `reference-routing.json`: each operation mode lists the
+files it loads; `lookup` files are opened only for a specific question.
 
-Context and processing references:
+| File | What it holds |
+|---|---|
+| `schema.md` | canonical graph schema: entities, events, relations, state changes, evidence |
+| `expansion-schema.md` | commitments, event facets (combat, mortality, transactions…), world geography, and their workflows |
+| `analysis-protocol.md` | how a chapter is read and what is recorded, the rules behind the audit |
+| `chapter-audit-spec.md` | audit protocol 2: the per-chapter audit card and its receipts |
+| `fragment-authoring.md` | writing a fragment, including the `FragmentBuilder` helper |
+| `ai-workflow.md` | survey → registry → lanes → capsule → extraction → verification → reconcile → editorial → backfill |
+| `verifier-prompt.md` | the independent blind verifier's prompt and verdict format |
+| `retrieval-and-efficiency.md` | retrieval levels R1–R4, caching, budgets, the accuracy A/B gate |
+| `temporal-view-contract.md` | as-of views and spoiler closure |
+| `overlapping-timelines-and-membership.md` | overlapping arcs and multi-membership, data and rendering |
+| `dashboard.md` | reader dashboard contracts: presentation, performance, taxonomy, display hints, collections, arcs, style |
+| `architecture.md` | module boundaries and the run / version / concurrency contract |
+| `ai-context.md` | bounded AI context exports |
+| `TASK-SPEC.template.md` | per-run task spec template |
 
-- `retrieval-and-efficiency.md` — the active compact context, escalation, candidate, caching, and validation-cost contract.
-- `reference-routing.json` — exact reference set for each operation mode.
-- `resume-capsule.template.json` — compact cross-turn and cross-agent continuation state.
-- `retrieval-profiles.json` and `coverage-receipt.template.json` — optional detailed audit artifacts for high-risk/global claims; routine fragments use compact coverage metadata.
-- `execution-profiles.json` — compact per-mode input/output and validation profiles.
-- `execution-receipt.template.json` — optional run-level performance telemetry, not a per-fragment requirement.
+JSON companions: `execution-profiles.json`, `retrieval-profiles.json`,
+`coverage-receipt.template.json`, `execution-receipt.template.json`,
+`resume-capsule.template.json`, and the fixtures `accuracy-context-fixture.json`,
+`dashboard-performance-fixture.json`, `overlap-membership-fixture.json`.
 
-Before changing repository or dashboard rendering, also read `dashboard-performance-and-navigation.md`.
+Development history (old contracts, gap logs, the pre-protocol-2 parallel
+extraction notes) lives in `docs/history/` and is not loaded by any mode.
 
-Additional normative references:
+## Upstream design notes
 
-- `collection-views.md` — saved collection expressions, set operators, provenance, and multi-membership cards.
-- `story-arcs.md` — inclusive overlapping intervals, nested/parallel arcs, and deterministic lane rendering.
-- `style-analysis.md` — evidence-backed prose, narration, speech, and behavior observations.
-- `overlap-and-membership.md` — shared fallback and accessibility rules for overlap-heavy views.
-- `dashboard-performance-and-navigation.md` — repository categories, pagination, virtualized rendering, lazy loading, and performance budgets.
-- `dashboard-taxonomy-and-relation-layout.md` — generic canonical-name, item/relationship taxonomy, hierarchy, readable graph, level-axis, and broad intimate-route rules.
+The workflow was informed by the following pinned GitHub revisions. The local
+Python helpers were independently authored for this skill; no upstream source
+files are vendored into the skill.
+
+| Project | Revision | License | Adopted design idea |
+|---|---|---|---|
+| QQ-L-XX/novel-deconstruct | `c75702bece3d110674452226528c0cb92c1b194a` | MIT | Scene-aware chapter analysis and value-change tracking |
+| Ce-Legend/novel-analysis-agent | `93e45864937cb3bc0794a5bdcfaaebe94e154c02` | MIT | Staged ingest/split/analyze/aggregate/evaluate artifacts, resumability, and report checks |
+| google/langextract | `bd5d1ebb51db51e9f6d054c026489d1d8127b005` | Apache-2.0 | Exact source grounding, multi-pass long-document extraction, and reviewable HTML output |
+| Mochocyang/QMAI | `03fe77563ef766257979d949b9a8eca47fb33460` | GPL-3.0 | Alias normalization, pinned evidence records, graph entity types, and foreshadowing lifecycle |
+| wordflowlab/novel-writer | `e4190d407e736affa42ba55a70d91961c6ce3932` | MIT | Character arc, relationship evolution, and story-structure analysis categories |
+| cytoscape/cytoscape.js | `3.34.3` | MIT | Graph rendering, layouts, selection, zooming, and interaction in the local dashboard |
+
+Do not redistribute or incorporate QMAI's GPL-licensed code into a differently
+licensed product without honoring GPL-3.0. Cytoscape.js is bundled under
+`assets/` with its license in `assets/CYTOSCAPE-LICENSE.txt`.

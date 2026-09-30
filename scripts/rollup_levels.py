@@ -222,7 +222,7 @@ def main() -> int:
     parser.add_argument(
         "--acknowledged", type=Path, default=None,
         help="已人工判定的命中清单（JSON）。命中的项照旧列出，但不计入 --strict 失败；"
-             "未列入清单的新命中仍然非零退出。见 references/known-gaps.md 的 A2："
+             "未列入清单的新命中仍然非零退出。见 docs/history/known-gaps.md 的 A2："
              "「命中不是错误，是要人读一遍」——没有确认机制的门禁不可用，人会学会忽略它。",
     )
     args = parser.parse_args()

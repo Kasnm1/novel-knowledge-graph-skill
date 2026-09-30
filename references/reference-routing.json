@@ -1,14 +1,23 @@
 {
-  "version": 8,
-  "always": ["../SKILL.md", "architecture-v2.md"],
+  "version": 9,
+  "always": ["../SKILL.md"],
   "modes": {
-    "initialize": ["run-isolation.md", "schema.md", "TASK-SPEC.template.md", "ai-workflow.md"],
-    "extract_fragment": ["schema.md", "analysis-protocol.md", "chapter-audit-spec.md", "ai-workflow.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "merge": ["schema.md", "run-isolation.md", "retrieval-and-efficiency.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "audit": ["schema.md", "chapter-audit-spec.md", "verifier-prompt.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "dashboard": ["visualization.md", "dashboard-performance-and-navigation.md", "dashboard-taxonomy-and-relation-layout.md", "display-intelligence-contract.md", "collection-views.md", "story-arcs.md", "overlapping-timelines-and-membership.md", "style-analysis.md", "expansion-schema.md", "expansion-workflows.md", "temporal-view-contract.md"],
-    "export_context": ["ai-context.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "temporal-view-contract.md"],
-    "backfill": ["schema.md", "analysis-protocol.md", "chapter-audit-spec.md", "ai-workflow.md", "retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "expansion-schema.md", "expansion-workflows.md", "temporal-view-contract.md"],
-    "optimize_execution": ["retrieval-and-efficiency.md", "accuracy-preserving-token-optimization.md", "execution-profiles.json", "retrieval-profiles.json", "accuracy-context-fixture.json"]
-  }
+    "initialize": ["architecture.md", "TASK-SPEC.template.md", "ai-workflow.md"],
+    "extract_fragment": ["chapter-audit-spec.md", "fragment-authoring.md", "analysis-protocol.md"],
+    "merge": ["schema.md", "architecture.md"],
+    "audit": ["chapter-audit-spec.md", "verifier-prompt.md", "retrieval-and-efficiency.md", "temporal-view-contract.md"],
+    "backfill": ["ai-workflow.md", "chapter-audit-spec.md", "analysis-protocol.md"],
+    "dashboard": ["dashboard.md", "temporal-view-contract.md"],
+    "export_context": ["ai-context.md", "retrieval-and-efficiency.md", "temporal-view-contract.md"],
+    "optimize_execution": ["retrieval-and-efficiency.md", "execution-profiles.json", "retrieval-profiles.json", "accuracy-context-fixture.json"]
+  },
+  "lookup": {
+    "schema.md": "field-level schema for any record kind",
+    "expansion-schema.md": "commitments, event facets (combat, mortality, transactions, information, payoff), geography, story time",
+    "ai-workflow.md": "workflow commands: survey, ids, plan, capsule, recall, score, reconcile, editorial, backfill",
+    "overlapping-timelines-and-membership.md": "overlapping arcs and multi-membership data and rendering",
+    "retrieval-and-efficiency.md": "R1–R4 retrieval levels, caching, budgets, the accuracy A/B gate",
+    "architecture.md": "module boundaries and the run / version / concurrency contract"
+  },
+  "max_lines_per_mode": 700
 }

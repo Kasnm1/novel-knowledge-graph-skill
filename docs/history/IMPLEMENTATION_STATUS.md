@@ -35,8 +35,8 @@ The expansion is implemented as a compatibility-safe layer over the existing Ski
 ## Canonical commands
 
 ```powershell
-python scripts/check_fragment_expanded.py --fragment <fragment.json> --graph <graph.json>
-python scripts/merge_graph_expanded.py --input <fragments...> --output <graph.json>
+python scripts/check_fragment.py --fragment <fragment.json> --graph <graph.json>
+python scripts/merge_graph.py --input <fragments...> --output <graph.json>
 python scripts/validate_full_graph.py --graph <graph.json>
 python scripts/derive_asof_views.py --graph <graph.json> --chapter 300 --output <snapshot.json>
 python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> --collection-manifest <dashboard-views.json> --output-dir <derived-dir>

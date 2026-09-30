@@ -324,13 +324,11 @@ assets/CYTOSCAPE-LICENSE.txt
 
 ## 相关文档
 
-- `SKILL.md`
-- `scripts/NKG_V2_COMMANDS.md`
-- `references/architecture-v2.md`
-- `references/accuracy-preserving-token-optimization.md`
-- `references/display-intelligence-contract.md`
-- `references/expansion-schema.md`
-- `references/expansion-workflows.md`
+- `SKILL.md`：技能入口与操作模式
+- `references/README.md`：参考文档索引（按模式载入，见 `references/reference-routing.json`）
+- `references/ai-workflow.md`：逐章审计工作流
+- `references/chapter-audit-spec.md`：审计卡协议
+- `docs/history/`：历史契约与开发记录（不再载入）
 
 ## License
 

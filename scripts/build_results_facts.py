@@ -316,7 +316,7 @@ def collect(run_dir: Path) -> dict:
     # 名称侧与章号侧是两条独立义务：一条注记可以不含任何「第 X 章」却点名一个
     # 还没出现的称呼（第 148 章的伏笔标题写着「林彤的师父」）。此前只统计章号侧，
     # 名称侧的 62 处 / 10 组是**空转了很久才第一次有数**的——因为别名定年表为空时
-    # 它恒报 0（见 references/known-gaps.md A8）。所以把「表有多大」也放进块里：
+    # 它恒报 0（见 docs/history/known-gaps.md A8）。所以把「表有多大」也放进块里：
     # 它是「这一步真的跑过了」的凭据，0 条就说明核查在空转，而不是「没问题」。
     add("asof_name_hits", "正文引用尚未出现的名称（渲染层义务）", (asof or {}).get("name_total"))
     add("asof_name_groups", "　涉及字段组", (asof or {}).get("name_group_count"))

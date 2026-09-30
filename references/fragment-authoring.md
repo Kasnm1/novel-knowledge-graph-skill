@@ -110,7 +110,7 @@ sys.exit(1 if bad else 0)
 
 `resolve_evidence.py` then fills `source_line_start` / `source_line_end`. Do not
 pre-fill them — it **skips** records that already carry both, so a stale line
-number survives an edit (see `known-gaps.md` A7).
+number survives an edit (see `docs/history/known-gaps.md` A7).
 
 ## What the helpers should assert
 

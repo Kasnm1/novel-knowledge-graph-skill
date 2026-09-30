@@ -208,7 +208,7 @@ def main() -> int:
 
     # ---- 已人工判定的项 ---------------------------------------------------
     # 与 rollup_levels.py 的 --acknowledged 同一机制、同一份文件。理由见
-    # references/known-gaps.md A2：清单命中不是错误，是要人读一遍；但读过的结论
+    # docs/history/known-gaps.md A2：清单命中不是错误，是要人读一遍；但读过的结论
     # 必须能被机器记住，否则每轮重跑都要重读，读者很快学会忽略整个清单。
     # key 形如 `<section>:<entity_id>`，用实体 ID 而不是行号或序号，分片增删不会失效。
     ack_doc: dict = {}
