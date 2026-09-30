@@ -32,11 +32,11 @@ from typing import Any
 from chapter_audit import AUDIT_ITEMS, SENTENCE_END
 from event_types import RECOMMENDED_EVENT_TYPES, canonical_event_type
 from relation_types import RELATION_GROUPS, RELATION_TYPE_ALIASES, canonical_relation_type
+from nkg.core.records import records
 
 
 def recs(graph: dict, key: str) -> list[dict]:
-    value = graph.get(key)
-    return [r for r in value if isinstance(r, dict)] if isinstance(value, list) else []
+    return records(graph.get(key))
 
 
 def chapter_texts(index_path: Path | None) -> dict[int, str]:

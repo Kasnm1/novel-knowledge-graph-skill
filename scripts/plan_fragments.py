@@ -21,6 +21,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from io_utils import atomic_write_text
+from nkg.core.records import read_chapter_index
 
 # Author notes in these books are a few hundred characters; a story chapter is
 # several thousand. The threshold only needs to separate those two populations.
@@ -40,17 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_chapters(path: Path, start: int, end: int) -> list[dict]:
-    rows = []
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            record = json.loads(line)
-            if start <= record["chapter"] <= end:
-                rows.append(record)
-    rows.sort(key=lambda r: r["chapter"])
-    return rows
+    return read_chapter_index(path, start, end)
 
 
 def is_note(record: dict) -> bool:
@@ -140,7 +132,7 @@ def main() -> int:
     print(f"共 {len(plan)} 片，最大片 {largest} 字，覆盖 {len(covered)} 章，无重叠无遗漏")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_text(args.output, json.dumps(plan, ensure_ascii=False, indent=2))
     print(f"wrote {args.output.resolve()}")
     return 0
 

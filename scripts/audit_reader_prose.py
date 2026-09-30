@@ -33,6 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from nkg.core.records import READER_PROSE_FIELDS  # noqa: E402
 from reader_prose import (  # noqa: E402
     FIELD_LABELS,
     FALLBACK_ENUM_LABELS,
@@ -44,10 +45,7 @@ from reader_prose import (  # noqa: E402
 )
 
 # Reader-facing prose fields. `quote` is never listed: source text is verbatim evidence.
-PROSE_FIELDS = (
-    "description", "reason", "observation", "interpretation", "summary",
-    "resolution", "title", "label", "note", "notes", "detail", "conclusion",
-)
+PROSE_FIELDS = READER_PROSE_FIELDS
 
 # Any record-shaped token; used to spot IDs the resolvers cannot label.
 ANY_ID = re.compile(r"\b(?:" + "|".join(ID_PREFIXES) + r")_[A-Za-z0-9_]{2,}\b")

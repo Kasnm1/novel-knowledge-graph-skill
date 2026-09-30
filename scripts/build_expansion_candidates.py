@@ -19,6 +19,8 @@ from typing import Any
 
 from controlled_vocab import category_ids
 from filter_graph_asof import filter_graph
+from nkg.core.records import records as recs
+from io_utils import atomic_write_text
 
 PATTERNS = {
     "commitment": re.compile(r"(答应|承诺|发誓|立誓|约定|赌约|赌一把|三年之约|一定会|必将)"),
@@ -26,10 +28,6 @@ PATTERNS = {
     "mortality": re.compile(r"(死了|死亡|身亡|陨落|被杀|杀死|复活|重生|还魂|死而复生)"),
 }
 REVIEW_STATUSES = {"unresolved", "confirmed", "excluded"}
-
-
-def recs(value: Any) -> list[dict[str, Any]]:
-    return [x for x in value if isinstance(x, dict)] if isinstance(value, list) else []
 
 
 def candidate_key(row: dict[str, Any]) -> str:
@@ -185,7 +183,7 @@ def main() -> int:
     p=argparse.ArgumentParser(description=__doc__);p.add_argument("--graph",required=True,type=Path);p.add_argument("--output",required=True,type=Path);p.add_argument("--chapters-jsonl",type=Path);p.add_argument("--relation-gap-threshold",type=int,default=3);p.add_argument("--chapter-start",type=int);p.add_argument("--chapter-end",type=int);p.add_argument("--cutoff",type=int);p.add_argument("--max-text-hits-per-kind-per-chapter",type=int,default=20);p.add_argument("--previous",type=Path,help="Prior candidate file whose review status should be carried forward")
     args=p.parse_args(); graph=json.loads(args.graph.read_text(encoding="utf-8")); previous=json.loads(args.previous.read_text(encoding="utf-8")) if args.previous else None
     result=build_output(graph,chapters_jsonl=args.chapters_jsonl,relation_gap_threshold=args.relation_gap_threshold,chapter_start=args.chapter_start,chapter_end=args.chapter_end,cutoff=args.cutoff,max_hits=max(1,args.max_text_hits_per_kind_per_chapter),previous=previous)
-    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
+    args.output.parent.mkdir(parents=True,exist_ok=True);atomic_write_text(args.output, json.dumps(result,ensure_ascii=False,indent=2))
     print(json.dumps({"output":str(args.output),"candidates":len(result["candidates"]),"audit_complete":result["audit"]["complete"],"temporal_provenance_candidates":result["audit"]["temporal_provenance_candidates"],"review_progress":result["audit"]["review_progress"]},ensure_ascii=False));return 0 if result["audit"]["complete"] else 2
 
 if __name__=="__main__":raise SystemExit(main())

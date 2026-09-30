@@ -52,6 +52,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from io_utils import atomic_write_text
 
 FRAGMENT_GLOB = "fragment-*.json"
 # `fragment-07.json` -> 7; a supplementary `fragment-K.json` sorts last, after the
@@ -199,8 +200,7 @@ def apply(run_dir: Path, planned: list[dict]) -> int:
             backup = path.with_suffix(path.suffix + ".pre-consolidate")
             if not backup.exists():
                 backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-                            encoding="utf-8")
+            atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
             touched += 1
     return touched
 
@@ -233,8 +233,7 @@ def main() -> int:
               f"每次 summary 都为空——本脚本不代写内容，需人工补")
 
     if args.json_path:
-        Path(args.json_path).write_text(
-            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        atomic_write_text(Path(args.json_path), json.dumps(report, ensure_ascii=False, indent=2) + "\n")
 
     if args.write:
         touched = apply(run_dir, planned)

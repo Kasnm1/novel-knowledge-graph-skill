@@ -30,6 +30,7 @@ from typing import Any, Callable, Iterable
 from controlled_vocab import CLIFFHANGER_TYPES
 from event_types import RECOMMENDED_EVENT_TYPES, canonical_event_type
 from relation_types import RELATION_GROUPS, RELATION_TYPE_ALIASES, canonical_relation_type
+from nkg.core.records import records
 
 AUDIT_PROTOCOL = 2
 
@@ -75,8 +76,7 @@ Report = Callable[[str], None]
 
 
 def _records(frag: dict, key: str) -> list[dict]:
-    value = frag.get(key)
-    return [r for r in value if isinstance(r, dict)] if isinstance(value, list) else []
+    return records(frag.get(key))
 
 
 def _in_chapter(rec: dict, chapter: int, *fields: str) -> bool:

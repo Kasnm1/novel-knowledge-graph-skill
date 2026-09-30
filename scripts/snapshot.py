@@ -19,6 +19,8 @@ import copy
 import json
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+from nkg.core.records import records as _records
+from nkg.temporal.asof import relation_active
 
 
 _REMOVAL_ACTIONS = {
@@ -61,14 +63,6 @@ def _require_chapter(chapter: Any) -> int:
     if value is None or value < 0:
         raise ValueError("chapter must be a non-negative integer")
     return value
-
-
-def _records(value: Any) -> list[dict[str, Any]]:
-    """Return only mapping records from a legacy or current array field."""
-
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, dict)]
 
 
 def _entity_id(entity: str | Mapping[str, Any]) -> str:
@@ -260,9 +254,7 @@ def active_relations(
     for relation in _records(graph.get("relations")):
         if wanted not in (relation.get("source_id"), relation.get("target_id")):
             continue
-        start = _as_chapter(relation.get("valid_from"), 0) or 0
-        end = _as_chapter(relation.get("valid_to"))
-        if start <= snapshot_chapter and (end is None or snapshot_chapter <= end):
+        if relation_active(relation, snapshot_chapter):
             result.append(copy.deepcopy(relation))
     result.sort(key=lambda item: (_as_chapter(item.get("valid_from"), 0) or 0, str(item.get("id") or "")))
     return result
@@ -551,17 +543,60 @@ def build_snapshot(graph: Mapping[str, Any], chapter: int) -> dict[str, Any]:
     foreshadowing/payoff details.  It adds ``snapshot_chapter`` and a top-level
     ``dynamic_state`` mapping keyed by entity ID.  The input is never mutated;
     callers should treat the result as a disposable view, not persisted truth.
+
+    Records are indexed by entity once and item ownership is replayed once per
+    item. Calling ``dynamic_state_for_entity`` per entity against the whole graph
+    rescanned every array for every entity and every item, which took about two
+    minutes per chapter on a 980-entity graph.
     """
 
     snapshot_chapter = _require_chapter(chapter)
     result = copy.deepcopy(dict(graph))
     result["snapshot_chapter"] = snapshot_chapter
-    result["dynamic_state"] = {
-        entity["id"]: dynamic_state_for_entity(graph, entity["id"], snapshot_chapter)
-        for entity in _records(graph.get("entities"))
-        if isinstance(entity.get("id"), str)
-    }
-    result["active_story_arcs"] = story_arcs_intersecting(graph, snapshot_chapter)
+    arcs = story_arcs_intersecting(graph, snapshot_chapter)
+
+    entities = [e for e in _records(graph.get("entities")) if isinstance(e.get("id"), str)]
+    changes_by: dict[str, list[dict[str, Any]]] = {}
+    relations_by: dict[str, list[dict[str, Any]]] = {}
+    for change in _records(graph.get("state_changes")):
+        if isinstance(change.get("entity_id"), str):
+            changes_by.setdefault(change["entity_id"], []).append(change)
+    for relation in _records(graph.get("relations")):
+        for key in ("source_id", "target_id"):
+            if isinstance(relation.get(key), str):
+                relations_by.setdefault(relation[key], []).append(relation)
+
+    item_ids = {e["id"] for e in entities if e.get("type") == "item"}
+    item_ids.update(r.get("target_id") for r in _records(graph.get("relations"))
+                    if r.get("relation_type") in _POSSESSION_RELATIONS and isinstance(r.get("target_id"), str))
+    item_ids.update(c.get("target_id") for c in _records(graph.get("state_changes"))
+                    if c.get("facet") == "possession" and isinstance(c.get("target_id"), str))
+    item_ids.update(r.get("item_id") for r in _iter_item_roles(graph) if isinstance(r.get("item_id"), str))
+    ownership = {item: ownership_at(graph, item, snapshot_chapter) for item in sorted(item_ids)}
+    roles_by_holder: dict[str, list[dict[str, Any]]] = {}
+    for item in sorted(ownership):
+        for role in ownership[item]:
+            roles_by_holder.setdefault(role["entity_id"], []).append({"item_id": item, **role})
+
+    dynamic: dict[str, Any] = {}
+    for entity in entities:
+        eid = entity["id"]
+        view = {"entities": [entity], "state_changes": changes_by.get(eid, []), "relations": relations_by.get(eid, [])}
+        facet_names = {str(c.get("facet")) for c in view["state_changes"] if c.get("facet") is not None}
+        if isinstance(entity.get("current_state"), Mapping):
+            facet_names.update(str(key) for key in entity["current_state"])
+        dynamic[eid] = {
+            "entity_id": eid,
+            "chapter": snapshot_chapter,
+            "facets": {facet: state_at(view, eid, facet, snapshot_chapter)
+                       for facet in sorted(facet_names) if facet != "level"},
+            "relations": active_relations(view, eid, snapshot_chapter),
+            "item_roles": ownership.get(eid, []) if entity.get("type") == "item" else roles_by_holder.get(eid, []),
+            "levels": levels_at(view, eid, snapshot_chapter),
+            "story_arcs": [arc for arc in arcs if eid in (arc.get("entity_ids") or [])],
+        }
+    result["dynamic_state"] = dynamic
+    result["active_story_arcs"] = arcs
     return result
 
 

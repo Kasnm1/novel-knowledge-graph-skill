@@ -38,14 +38,14 @@ from level_conversions import (
 )
 # 必填字段表与 check_fragment.py 共用一份，见 required_fields.py 的模块说明：
 # 门禁比校验器弱，就等于把失败推迟到合并之后。
-from required_fields import CONFIDENCE, REQUIRED, REQUIRED_KEYS
+from relation_types import SYMMETRIC_RELATION_TYPES
+from required_fields import ARRAY_KINDS, CONFIDENCE, LOSS_ACTIONS, REQUIRED, REQUIRED_KEYS
+from nkg.core.records import decode_source as _decode_source, normalize_text as normalized_text
 
 
 CORE_ARRAYS = ("entities", "events", "relations", "state_changes", "foreshadowing", "evidence", "review_issues")
-OPTIONAL_ARRAYS = ("romance_routes", "intimate_acts", "level_conversions",
-                   "character_traits", "chapter_summaries", "item_roles", "story_arcs")
+OPTIONAL_ARRAYS = tuple(name for name in ARRAY_KINDS if name not in CORE_ARRAYS)
 ARRAYS = CORE_ARRAYS + OPTIONAL_ARRAYS
-LOSS_ACTIONS = {"lost", "transferred", "sealed", "forgotten", "left", "destroyed", "removed", "broken"}
 # CONFIDENCE 由 required_fields.py 提供：`check_fragment.py` 的合并前门禁要用同一份，
 # 否则门禁只查这个字段「存在」、校验器查「取值」，坏值就被推迟到合并后才炸。
 # 2026-09-14《逆天邪神》fragment-25 的 `confidence: "suspected"` 就是这么漏过去的。
@@ -69,11 +69,6 @@ ITEM_CATEGORIES = {
     "token_credential", "ordinary", "unresolved",
 }
 # CONSENT_CONTEXTS 由 intimacy_types.py 提供：romance_routes 与 intimate_acts 共用一份定义
-SYMMETRIC_RELATION_TYPES = {
-    "alter_ego_of", "close_friend_of", "companion_of", "dating", "enemy_of", "friend_of",
-    "mission_partner_of", "partner_of", "rival_of", "romantic_partner_of",
-    "sibling_of", "spouse_of", "sworn_sibling_of", "task_partner_of",
-}
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,16 +80,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def decode_source(raw: bytes) -> str:
-    for encoding in ("utf-8-sig", "utf-8", "gb18030", "big5"):
-        try:
-            return raw.decode(encoding)
-        except UnicodeDecodeError:
-            continue
-    raise UnicodeError("Unable to decode source")
-
-
-def normalized_text(value: str) -> str:
-    return re.sub(r"\s+", "", value.replace("\ufeff", ""))
+    return _decode_source(raw)[0]
 
 
 def main() -> int:

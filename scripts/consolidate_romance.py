@@ -36,6 +36,7 @@ import json
 import sys
 from copy import deepcopy
 from pathlib import Path
+from io_utils import atomic_write_text
 
 STATUS_RANK = {
     "excluded_nonromantic": -1,
@@ -207,10 +208,9 @@ def main() -> int:
         if data.get("romance_routes"):
             removed += len(data["romance_routes"])
             data["romance_routes"] = []
-            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
-    output.write_text(
-        json.dumps(
+    atomic_write_text(output, json.dumps(
             {
                 "metadata": {
                     "title": load(chapter_fragments[0]).get("metadata", {}).get("title", ""),
@@ -228,9 +228,7 @@ def main() -> int:
                 "romance_routes": canonical,
             },
             ensure_ascii=False, indent=2,
-        ) + "\n",
-        encoding="utf-8",
-    )
+        ) + "\n")
 
     print(f"清理各分片中的临时 romance 记录 {removed} 条；规范路线 {len(canonical)} 条：")
     for route in canonical:

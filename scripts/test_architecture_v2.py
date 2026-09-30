@@ -18,7 +18,7 @@ class RuntimeTests(unittest.TestCase):
         graph = fixture_graph()
         runtime = GraphRuntime(graph)
         self.assertEqual(runtime.entity("hero")["id"], "hero")
-        self.assertEqual(runtime.state_at("hero", 5)["inventory_quantity"]["value"], 1)
+        self.assertEqual(runtime.state_at("hero", 5)["inventory_quantity@item"]["value"], 1)
         self.assertIn("skill", runtime.connected_entities({"hero"}, 8, hops=1))
         self.assertTrue(runtime.events_for("hero", 1, 3))
 

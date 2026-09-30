@@ -2,16 +2,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from typing import Any, Mapping
+from nkg.core.records import records as _records
 
 DEFAULT_ARRAYS = (
     "entities", "events", "relations", "state_changes", "romance_routes", "intimate_acts",
     "level_conversions", "character_traits", "chapter_summaries", "story_arcs", "item_roles",
     "commitments", "foreshadowing", "evidence", "review_issues",
 )
-
-
-def _records(value: object) -> list[dict[str, Any]]:
-    return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
 
 
 def _ids(graph: Mapping[str, Any], array: str) -> set[str]:

@@ -10,6 +10,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from nkg.core.records import chinese_number as _chinese_number, decode_source
 
 
 CHAPTER_RE = re.compile(
@@ -48,9 +49,6 @@ TOC_TAIL_RE = re.compile(r"[.．·…]{2,}\s*\d{1,4}\s*$")
 # chapter-scoped views exist to withhold.
 PACKAGING_RE = re.compile(r"『[^』]*』|【[^】]*】|章节内容(开始|结束)|正文(开始|结束)|https?://")
 SENTENCE_END_RE = re.compile(r"[。！？…”」』]")
-DIGITS = {"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3,
-          "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
-UNITS = {"十": 10, "百": 100, "千": 1000}
 
 
 # Markers that identify ebook packaging or a publisher's blurb rather than story
@@ -220,24 +218,10 @@ def trim_front_matter(lines: list[str]) -> tuple[list[str], int, int]:
 
 
 def chinese_number(value: str) -> int:
-    if value.isdigit():
-        return int(value)
-    total = 0
-    section = 0
-    number = 0
-    for char in value:
-        if char in DIGITS:
-            number = DIGITS[char]
-        elif char in UNITS:
-            unit = UNITS[char]
-            if number == 0:
-                number = 1
-            section += number * unit
-            number = 0
-        else:
-            raise ValueError(f"Unsupported Chinese numeral: {value}")
-    total += section + number
-    return total
+    number = _chinese_number(value)
+    if number is None:
+        raise ValueError(f"Unsupported Chinese numeral: {value}")
+    return number
 
 
 def match_heading(probe: str) -> tuple[int, str, str] | None:
@@ -282,15 +266,6 @@ def match_heading(probe: str) -> tuple[int, str, str] | None:
         if following == chapter_no + 1:
             title = title[: tail.start()].strip()
     return chapter_no, title, ("" if prefix == "正文" else prefix)
-
-
-def decode_source(raw: bytes) -> tuple[str, str]:
-    for encoding in ("utf-8-sig", "utf-8", "gb18030", "big5"):
-        try:
-            return raw.decode(encoding), encoding
-        except UnicodeDecodeError:
-            continue
-    raise UnicodeError("Unable to decode source as UTF-8, GB18030, or Big5")
 
 
 def parse_args() -> argparse.Namespace:

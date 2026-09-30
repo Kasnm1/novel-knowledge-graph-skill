@@ -21,6 +21,8 @@ import json
 import re
 import sys
 from pathlib import Path
+from nkg.core.records import normalize_text as norm
+from io_utils import atomic_write_text
 
 
 def repair_inner_quotes(text: str) -> str:
@@ -73,10 +75,6 @@ def load_json(path: Path) -> tuple[object, bool]:
             return json.loads(fixed), True
         except json.JSONDecodeError as exc:
             raise SystemExit(f"{path.name}: JSON 无法解析，且自动修复失败 -> {exc}")
-
-
-def norm(s: str) -> str:
-    return re.sub(r"\s+", "", (s or "").replace("\ufeff", ""))
 
 
 def main() -> int:
@@ -196,7 +194,7 @@ def main() -> int:
             located += 1
 
         if not args.dry_run:
-            fp.write_text(json.dumps(frag, ensure_ascii=False, indent=2), encoding="utf-8")
+            atomic_write_text(fp, json.dumps(frag, ensure_ascii=False, indent=2))
         tag = "（dry-run，未写回）" if args.dry_run else ""
         print(
             f"  {fp.name}: 定位 {located} 条（其中失效重定位 {relocated} 条），"

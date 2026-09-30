@@ -18,18 +18,7 @@ from typing import Any, Iterable
 
 from controlled_vocab import LEVEL_FACET_HINTS, category_ids, resource_tag_parts
 from extension_contracts import validate_graph_extensions
-
-
-def records(value: object) -> list[dict[str, Any]]:
-    return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
-
-
-def chapter_of(record: dict[str, Any], *fields: str) -> int | None:
-    for field in fields:
-        value = record.get(field)
-        if isinstance(value, int) and not isinstance(value, bool):
-            return value
-    return None
+from nkg.core.records import chapter_of, records
 
 
 def entity_maps(graph: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:

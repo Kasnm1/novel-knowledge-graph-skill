@@ -4,19 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
-
-def records(value: object) -> list[dict[str, Any]]:
-    return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
-
-
-def chapter_value(value: object) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) else None
-
-
-def interval_active(record: Mapping[str, Any], chapter: int, start_key: str = "valid_from", end_key: str = "valid_to") -> bool:
-    start = chapter_value(record.get(start_key))
-    end = chapter_value(record.get(end_key))
-    return (start is None or start <= chapter) and (end is None or chapter <= end)
+from nkg.core.records import chapter_value, interval_active, records
 
 
 @dataclass(frozen=True)
@@ -192,7 +180,11 @@ class GraphRuntime:
             end = chapter_value(change.get("end_chapter"))
             if change_chapter is None or change_chapter > chapter or (end is not None and chapter > end):
                 continue
+            # A targeted change (a level on one axis, possession of one item) is its own
+            # state: keying by facet alone let the last axis overwrite every other one.
             key = str(change.get("facet") or "")
+            if isinstance(change.get("target_id"), str):
+                key = f"{key}@{change['target_id']}"
             latest[key] = change
         return {
             key: {

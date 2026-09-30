@@ -28,12 +28,9 @@ from controlled_vocab import (
     category_ids,
     resource_tag_parts,
 )
+from nkg.core.records import records as _records
+from required_fields import CONFIDENCE
 
-CONFIDENCE = {"explicit", "inferred", "uncertain"}
-
-
-def _records(value: object) -> list[dict[str, Any]]:
-    return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
 def _idset(graph: dict[str, Any], arrays: Iterable[str]) -> set[str]:

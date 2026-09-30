@@ -21,6 +21,7 @@ from filter_graph_asof import filter_graph
 from io_utils import atomic_write_text
 from required_fields import ARRAY_KINDS
 from validate_style_observations import validate_style_observations
+from nkg.core.records import chapter_of as _chapter_of
 
 LINE_RE = re.compile(r"(?:(?:原文)?第\s*\d+\s*(?:[—–-]\s*\d+\s*)?行|\b(?:source[ _-]?)?lines?\s*\d+(?:\s*[-–—]\s*\d+)?)", re.IGNORECASE)
 GROUPS = tuple(ARRAY_KINDS)
@@ -45,11 +46,8 @@ def record_id(record: dict[str, Any]) -> str:
 
 
 def chapter_of(record: dict[str, Any]) -> int | None:
-    for key in ("chapter", "created_chapter", "planted_chapter", "first_meeting_chapter", "valid_from", "chapter_start"):
-        value = record.get(key)
-        if isinstance(value, int) and not isinstance(value, bool):
-            return value
-    return None
+    return _chapter_of(record, "chapter", "created_chapter", "planted_chapter", "first_meeting_chapter",
+                       "valid_from", "chapter_start")
 
 
 def sort_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:

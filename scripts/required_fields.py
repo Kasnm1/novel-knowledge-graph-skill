@@ -83,6 +83,11 @@ EXPECTED_NON_EMPTY: tuple[str, ...] = ("character_traits",)
 
 CONFIDENCE: frozenset[str] = frozenset({"explicit", "inferred", "uncertain"})
 
+# State-change actions that end what the entity had; a loss needs a `reason`.
+LOSS_ACTIONS: frozenset[str] = frozenset({
+    "lost", "transferred", "sealed", "forgotten", "left", "destroyed", "removed", "broken",
+})
+
 DERIVED: dict[str, tuple[str, ...]] = {
     "evidence": ("source_line_start", "source_line_end"),
 }

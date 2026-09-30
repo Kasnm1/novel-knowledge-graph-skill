@@ -43,14 +43,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from reader_prose import FALLBACK_ENUM_LABELS, strip_process_text  # noqa: E402
+from nkg.core.records import READER_PROSE_FIELDS
 
 # Every field a reader can see. Kept in step with `reader_prose` / the renderers:
 # adding a field here without adding it there means it gets cleaned at render time
 # but never at source (or the reverse), which is exactly the drift this tool avoids.
-PROSE_FIELDS = (
-    "description", "reason", "observation", "interpretation", "summary",
-    "resolution", "title", "label", "note", "notes", "detail", "conclusion",
-)
+PROSE_FIELDS = READER_PROSE_FIELDS
 
 # Arrays whose prose describes the story (as opposed to notes written for the
 # analyst, such as `review_issues`, which are allowed to talk about chapters).

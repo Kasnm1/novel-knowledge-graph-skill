@@ -40,6 +40,8 @@ import json
 import os
 import re
 import sys
+from nkg.core.records import chapter_files
+from pathlib import Path
 
 # Tier A — 近乎只出现在性交场景
 TIER_A: tuple[str, ...] = (
@@ -62,24 +64,11 @@ TIER_C: tuple[str, ...] = ("拥抱", "搂", "亲吻", "亲了", "抱住", "牵�
 
 def load_chapters(run_dir: str) -> list[tuple[int, str]]:
     """Return [(chapter, text)] sorted by chapter, from <run>/chapters/*.txt."""
-    root = os.path.join(run_dir, "chapters")
-    if not os.path.isdir(root):
+    root = Path(run_dir) / "chapters"
+    if not root.is_dir():
         raise SystemExit(f"找不到章节目录：{root}")
-    out: list[tuple[int, str]] = []
-    for name in os.listdir(root):
-        if not name.endswith(".txt"):
-            continue
-        stem = name[:-4]
-        if not stem.isdigit():
-            continue
-        # 章节文件名是 001.txt … 1319.txt —— 必须取完整数字，
-        # 用 name[:3] 会把 1000.txt 读成第 100 章（本脚本第一版就是这么错的）。
-        n = int(stem)
-        path = os.path.join(root, name)
-        with io.open(path, encoding="utf-8", errors="replace") as fh:
-            out.append((n, fh.read()))
-    out.sort(key=lambda item: item[0])
-    return out
+    return [(row["chapter"], Path(row["text_path"]).read_text(encoding="utf-8", errors="replace"))
+            for row in chapter_files(root)]
 
 
 def hits(text: str, markers: tuple[str, ...]) -> dict[str, int]:

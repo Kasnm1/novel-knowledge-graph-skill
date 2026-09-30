@@ -6,22 +6,12 @@ from pathlib import Path
 from typing import Any
 from filter_graph_asof import filter_graph
 from io_utils import atomic_write_text
+from nkg.core.records import read_chapter_index
 
 
-def load_chapters(index:Path, cutoff:int|None=None)->list[dict[str,Any]]:
-    out=[]; missing=[]
-    for line_no,line in enumerate(index.read_text(encoding='utf-8').splitlines(),1):
-        if not line.strip(): continue
-        try: row=json.loads(line)
-        except json.JSONDecodeError as exc: raise ValueError(f'chapters jsonl line {line_no}: {exc}') from exc
-        ch=row.get('chapter')
-        if not isinstance(ch,int): raise ValueError(f'chapters jsonl line {line_no}: chapter must be integer')
-        if cutoff is not None and ch>cutoff: continue
-        p=Path(row.get('text_path',''))
-        if not p.is_file(): missing.append({'chapter':ch,'text_path':str(p)}); continue
-        out.append({'chapter':ch,'title':row.get('title'),'text':p.read_text(encoding='utf-8')})
-    if missing: raise FileNotFoundError('missing prepared chapter text: '+json.dumps(missing,ensure_ascii=False))
-    return out
+def load_chapters(index: Path, cutoff: int | None = None) -> list[dict[str, Any]]:
+    rows = read_chapter_index(index, end=cutoff, with_text=True, require_text=True)
+    return [{"chapter": r["chapter"], "title": r.get("title"), "text": r["text"]} for r in rows]
 
 
 def highlight(text:str,evidence:list[dict[str,Any]])->str:

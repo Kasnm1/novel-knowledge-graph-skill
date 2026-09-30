@@ -11,6 +11,21 @@ def _ids(graph: Mapping[str, Any], array: str) -> set[str]:
     return {str(row["id"]) for row in records(graph.get(array)) if isinstance(row.get("id"), str)}
 
 
+def _snapshot_chapter(graph: Mapping[str, Any]) -> int:
+    """The chapter a snapshot was cut at.
+
+    `metadata.chapter_end` after filtering is the highest *analysed* chapter at or
+    before the cut, not the cut itself, so a diff of chapters 100 → 105 over a gap
+    in coverage reported the wrong endpoints.
+    """
+    meta = graph.get("metadata") if isinstance(graph.get("metadata"), dict) else {}
+    for key in ("spoiler_cutoff_chapter", "chapter_end"):
+        value = meta.get(key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+    return 0
+
+
 def diff_snapshots(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[str, Any]:
     """Compare two already-scoped canonical snapshots without inventing facts."""
     changes: dict[str, Any] = {}
@@ -26,8 +41,7 @@ def diff_snapshots(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[
     left_runtime, right_runtime = GraphRuntime(before), GraphRuntime(after)
     common_entities = set(left_runtime.entity_by_id) & set(right_runtime.entity_by_id)
     state_changes: list[dict[str, Any]] = []
-    before_chapter = int(before.get("metadata", {}).get("chapter_end") or 0) if isinstance(before.get("metadata"), dict) else 0
-    after_chapter = int(after.get("metadata", {}).get("chapter_end") or 0) if isinstance(after.get("metadata"), dict) else 0
+    before_chapter, after_chapter = _snapshot_chapter(before), _snapshot_chapter(after)
     for entity_id in sorted(common_entities):
         left_state = left_runtime.state_at(entity_id, before_chapter)
         right_state = right_runtime.state_at(entity_id, after_chapter)

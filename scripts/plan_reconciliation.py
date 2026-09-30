@@ -64,6 +64,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from io_utils import atomic_write_text
 
 ENTITY_PREFIXES = (
     "char_", "skill_", "item_", "org_", "loc_", "creature_", "concept_",
@@ -478,7 +479,7 @@ def main() -> int:
     report["audit_window"] = sorted(audit_window) if audit_window is not None else None
 
     if args.json:
-        args.json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        atomic_write_text(args.json, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
 
     # ---- human summary ----
     print(f"# 合并前对账：{len(fragments)} 个分片，{run_dir.name}")

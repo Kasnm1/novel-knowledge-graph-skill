@@ -16,6 +16,7 @@ from event_types import canonicalize_event_types
 from intimacy_types import canonicalize_intimate_acts
 from character_traits import canonical_facet, sort_traits
 from level_conversions import canonicalize_level_conversions
+from relation_types import SYMMETRIC_RELATION_TYPES
 from io_utils import atomic_write_json
 from required_fields import ARRAY_KINDS
 
@@ -25,11 +26,6 @@ from required_fields import ARRAY_KINDS
 # the same set instead of maintaining divergent hand-written tuples.
 ARRAYS = tuple(ARRAY_KINDS)
 STRICT_KINDS = {"events", "state_changes", "evidence"}
-SYMMETRIC_RELATION_TYPES = {
-    "alter_ego_of", "close_friend_of", "companion_of", "dating", "enemy_of", "friend_of",
-    "mission_partner_of", "partner_of", "rival_of", "romantic_partner_of",
-    "sibling_of", "spouse_of", "sworn_sibling_of", "task_partner_of",
-}
 
 
 def canonicalize_character_traits(records: list) -> tuple[list, list]:

@@ -16,6 +16,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
+from io_utils import atomic_write_text
 
 
 def canonical_bytes(value: Any) -> bytes:
@@ -248,7 +249,7 @@ def apply_corrections(base_graph: Mapping[str, Any], corrections: list[dict[str,
 
 
 def write_json(path: Path, value: Mapping[str, Any]) -> None:
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_text(path, json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -29,10 +29,9 @@ import re
 import sys
 from pathlib import Path
 
+from nkg.core.records import chapter_files, chinese_number, read_chapter_index
+from io_utils import atomic_write_text
 
-DIGITS = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
-          "六": 6, "七": 7, "八": 8, "九": 9}
-UNITS = {"十": 10, "百": 100, "千": 1000, "万": 10000}
 
 # 等级计数单位。刻意不含「层」：中文里「一层灰尘」「一层光芒」是量词，放进来
 # 会把候选表淹没。「重」只通过「第 N 重」的专门模式识别，用于功法／境界类等级轴。
@@ -80,28 +79,7 @@ NUMERAL_IN_TEXT = re.compile(rf"(?:{AR_NUM}|{CN_NUM})")
 
 def cn_to_int(text: str) -> int | None:
     """Parse a Chinese numeral up to 万, e.g. 十七 -> 17, 二十 -> 20."""
-    if not text:
-        return None
-    if text.isdigit():
-        return int(text)
-    total = 0
-    section = 0
-    number = 0
-    for char in text:
-        if char in DIGITS:
-            number = DIGITS[char]
-        elif char in UNITS:
-            unit = UNITS[char]
-            if unit == 10000:
-                section = (section + (number or 1)) * unit
-                total += section
-                section = 0
-            else:
-                section += (number or 1) * unit
-            number = 0
-        else:
-            return None
-    return total + section + number
+    return chinese_number(text) if text else None
 
 
 def as_list(value) -> list:
@@ -164,19 +142,11 @@ def level_label(value) -> str:
 
 
 def load_chapters(chapters_dir: Path, chapters_jsonl: Path | None) -> list[dict]:
-    records: list[dict] = []
     if chapters_jsonl and chapters_jsonl.exists():
-        for line in chapters_jsonl.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-    if records:
-        return records
-    for path in sorted(chapters_dir.glob("*.txt")):
-        match = re.search(r"(\d+)", path.stem)
-        if match:
-            records.append({"chapter": int(match.group(1)), "text_path": str(path)})
-    return records
+        rows = read_chapter_index(chapters_jsonl)
+        if rows:
+            return rows
+    return chapter_files(chapters_dir)
 
 
 def chapter_text_path(record: dict, chapters_dir: Path | None) -> Path | None:
@@ -578,7 +548,7 @@ def main() -> int:
     }
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        atomic_write_text(args.output, json.dumps(report, ensure_ascii=False, indent=2))
     print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
     for item in rollup:
         chain = " → ".join(f"{s['after']}(第{s['chapter']}章)" for s in item["steps"])

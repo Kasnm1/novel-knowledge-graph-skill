@@ -26,17 +26,13 @@ import sys
 from pathlib import Path
 
 from chapter_audit import check_fragment_audit
+from required_fields import LOSS_ACTIONS
+from nkg.core.records import normalize_text as norm
+from nkg.core.records import READER_PROSE_FIELDS
 
-LOSS_ACTIONS = {
-    "lost", "transferred", "sealed", "forgotten", "left",
-    "destroyed", "removed", "broken",
-}
 
 # 会进入渲染文本、可能引用章号的字段
-PROSE_FIELDS = {
-    "description", "notes", "interpretation", "observation", "summary",
-    "reason", "resolution", "label",
-}
+PROSE_FIELDS = READER_PROSE_FIELDS
 
 ID_FIELDS = (
     "participant_ids", "related_entity_ids", "cause_event_ids",
@@ -72,10 +68,6 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--json", type=Path, help="把结果写成 JSON")
     return p.parse_args()
-
-
-def norm(s: str) -> str:
-    return re.sub(r"\s+", "", s.replace("\ufeff", ""))
 
 
 class Checker:

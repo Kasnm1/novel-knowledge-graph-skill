@@ -47,19 +47,13 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from asof_names import LateNameIndex
+from nkg.core.records import READER_PROSE_FIELDS
 
 CHAPTER_TOKEN = re.compile(r"第\s*(\d+)\s*章")
 
 # The fields the panel renders as prose. `quote` is deliberately absent: it is
 # verbatim source text and is never rewritten or withheld.
-PROSE_FIELDS = (
-    "description", "reason", "observation", "interpretation",
-    "summary", "resolution", "notes", "title", "label", "note",
-    # 人物特征的断言是散文，而且**天生容易写进未来**：基线记在首次出场那一章，
-    # 而作者很自然会顺手写「第 40 章剪短头发」——那就是第 1 章视图里出现第 40 章
-    # 的事实。`statement` 与上面那些字段同类，必须走同一套 as-of 义务。
-    "statement",
-)
+PROSE_FIELDS = READER_PROSE_FIELDS
 
 ARRAYS = (
     "entities", "events", "relations", "state_changes",

@@ -63,6 +63,17 @@ GROUP_LABELS: dict[str, str] = {
     "other": "其他",
 }
 
+# Reversing source and target does not make a distinct relation for these types.
+# Legacy spellings stay listed so graphs written before the canonical vocabulary
+# still coalesce the same way.
+SYMMETRIC_RELATION_TYPES: frozenset[str] = frozenset({
+    "alter_ego_of", "same_body_as", "close_friend_of", "friend_of", "ally_of", "companion_of",
+    "colleague_of", "familiar_with", "enemy_of", "rival_of", "sibling_of", "sworn_sibling_of",
+    "relative_of", "spouse_of", "lover_of", "former_lover_of",
+    # legacy spellings
+    "dating", "mission_partner_of", "partner_of", "romantic_partner_of", "task_partner_of",
+})
+
 RELATION_TYPE_ALIASES: dict[str, str] = {
     "romantic_partner_of": "lover_of",
     "father_of": "parent_of",
