@@ -204,3 +204,67 @@ kbd { font-size: 11px; border: 1px solid var(--line-strong); border-radius: 3px;
   .main { padding: 12px; }
   .receipts { grid-template-columns: 1fr; }
 }
+
+/* graphs and sets */
+.cols.wide-left { grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); }
+.graph { width: 100%; background: #fbfcfe; border: 1px solid var(--line); border-radius: var(--radius); }
+.group-filter { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; }
+.group-filter label { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
+.opt { font-size: 12px; color: var(--muted); }
+.opt select { font: inherit; margin-left: 4px; }
+.pack svg { display: block; margin: 0 auto; width: 100%; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; font-size: 13px; }
+.crumbs button { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 2px 8px; }
+.crumbs button.on { background: var(--accent-soft); color: var(--accent); border-color: #cfdcf2; }
+.crumbs .sep { color: var(--muted); }
+.pack-note { margin-left: auto; font-size: 11px; }
+.pk-set circle { cursor: zoom-in; }
+.pk-set.root > circle { cursor: default; }
+.pk-member { cursor: pointer; }
+.pk-label { fill: #fff; pointer-events: none; font-weight: 600; }
+.pk-member.ghost .pk-label { fill: var(--accent); }
+.pk-set-label { fill: #3b4654; font-weight: 600; cursor: pointer; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.pk-pin { cursor: pointer; }
+.pk-pin-label { fill: #8a1f45; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.legend { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 3px 0 8px; vertical-align: -1px; }
+.legend.hot { border: 2px solid #e8b931; }
+.legend.pin { background: #c23d6a; }
+.ladders, .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--gap); margin-top: var(--gap); align-items: start; }
+.world > .cols, .world > .empty { margin-top: var(--gap); }
+.ladder { list-style: none; margin: 0; padding: 0; }
+.ladder li { padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.ladder li.held .rung { font-weight: 600; color: var(--axis); }
+.rung-from { font-size: 11px; margin: 0 8px; }
+
+/* story lanes */
+.lanes { display: flex; flex-direction: column; gap: 4px; }
+.lane { display: grid; grid-template-columns: 160px minmax(0, 1fr) 150px; align-items: center; gap: 8px; }
+.lane.now .lane-title { font-weight: 700; }
+.lane-title { text-align: left; border: 0; background: none; color: var(--accent); padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lane-track { position: relative; height: 14px; background: var(--bg); border-radius: 7px; }
+.lane-bar { position: absolute; top: 2px; height: 10px; background: #9fbbe6; border-radius: 5px; }
+.lane.now .lane-bar { background: var(--accent); }
+.lane-range { font-size: 12px; }
+.arc-page h2 { margin: 6px 0 0; }
+
+/* thread boards */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: var(--gap); overflow-x: auto; margin-top: var(--gap); padding-bottom: 6px; }
+.board-col { background: #eef1f5; border-radius: var(--radius); padding: 8px; min-width: 0; }
+.board-col h3 { margin: 0 0 8px; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.tcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+.tcard p { margin: 4px 0; }
+.step { font-size: 12px; color: var(--muted); }
+.milestones { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.ms { font-size: 12px; background: #fbeef3; border-radius: 3px; padding: 0 6px; }
+.acts { margin-top: var(--gap); }
+
+@media (max-width: 900px) {
+  .cols.wide-left { grid-template-columns: minmax(0, 1fr); }
+  .lane { grid-template-columns: 110px minmax(0, 1fr); }
+  .lane-range { display: none; }
+}
+@media (max-width: 720px) {
+  .board { grid-auto-flow: row; grid-auto-columns: auto; overflow-x: visible; }
+  .graph { height: 420px !important; }
+}
+.graph-host { width: 100%; height: 100%; }

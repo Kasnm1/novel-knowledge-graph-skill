@@ -173,6 +173,7 @@ class _Builder:
                 "headlines": headlines,
                 "bios": {k: _prose(v, self.enum_labels) for k, v in (prof.get("arc_bios") or {}).items()},
                 "toProtagonist": prof.get("relation_to_protagonist"),
+                "primary": prof.get("primary_membership") if prof.get("primary_membership") in self.entities else None,
                 "attrs": self._attributes(e),
                 "events": participation.get(eid, 0),
             })
@@ -284,10 +285,22 @@ class _Builder:
                     "value": _prose(text, self.enum_labels) or text, "sort": _sort_value(value),
                     "action": sc.get("action"), "reason": _prose(sc.get("reason"), self.enum_labels),
                     "ev": self.ev(sc.get("evidence_ids")), "volatile": volatile or None,
-                    "id": sc.get("id"),
+                    "id": sc.get("id"), "place": self._place(text) if facet == "location" else None,
                 }))
         rows.sort(key=lambda r: (r["e"], r["facet"], r.get("target") or "", r["from"]))
         return rows
+
+    def _place(self, text: str) -> str | None:
+        """The location entity a location state names exactly (name or alias); no fuzzy match."""
+        if not hasattr(self, "_places"):
+            index: dict[str, set[str]] = defaultdict(set)
+            for eid, e in self.entities.items():
+                if e.get("type") == "location":
+                    for label in [e.get("name"), *(a for a in e.get("aliases") or [] if isinstance(a, str))]:
+                        if isinstance(label, str) and label:
+                            index[label].add(eid)
+            self._places = {k: next(iter(v)) for k, v in index.items() if len(v) == 1}
+        return self._places.get(text.strip())
 
     # -- relations -----------------------------------------------------------
     def relation_rows(self) -> list[dict[str, Any]]:

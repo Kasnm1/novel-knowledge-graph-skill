@@ -22,6 +22,7 @@ def graph():
         "entities": [
             {"id": "char_a", "type": "character", "name": "阿甲", "first_chapter": 1, "aliases": ["甲哥"],
              "summary": "终局总结", "evidence_ids": ["e1"]},
+            {"id": "loc_valley", "type": "location", "name": "山谷", "first_chapter": 3, "aliases": []},
             {"id": "char_b", "type": "character", "name": "云谷", "first_chapter": 2,
              "name_history": [{"name": "白衣老者", "valid_from": 2}, {"name": "云谷", "valid_from": 30}], "aliases": []},
         ],
@@ -88,6 +89,17 @@ class ReaderModelTests(unittest.TestCase):
     def test_only_cited_evidence_is_carried(self):
         # entity-level evidence is undated prose support, so it is not carried
         self.assertEqual(set(self.model["evidence"]), {"e3", "e20", "e25"})
+
+
+class PlaceLinkTests(unittest.TestCase):
+    def test_location_state_links_only_an_exact_place_name(self):
+        model = build(graph())
+        loc = next(f for f in model["facts"] if f["facet"] == "location")
+        self.assertEqual(loc["place"], "loc_valley")
+        g = graph()
+        g["state_changes"][0]["after"] = {"label": "山谷深处"}
+        loc = next(f for f in build(g)["facts"] if f["facet"] == "location")
+        self.assertNotIn("place", loc)
 
 
 class CutoffBuildTests(unittest.TestCase):

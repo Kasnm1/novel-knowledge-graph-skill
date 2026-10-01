@@ -6,7 +6,7 @@ export type Dated<T = string> = [number, T];
 
 export interface Fact {
   e: string; facet: string; target?: string; from: number; to?: number; value: string;
-  sort?: number; action?: string; reason?: string; ev?: string[]; volatile?: boolean; id?: string;
+  sort?: number; action?: string; reason?: string; ev?: string[]; volatile?: boolean; id?: string; place?: string;
 }
 export interface Relation {
   id: string; s: string; t: string; type: string; group: string; from: number; to?: number;
@@ -15,7 +15,7 @@ export interface Relation {
 export interface Entity {
   type: string; first: number; names: Dated[]; aliases?: Dated[]; summary?: Dated[];
   tier: string; tierSource: string; categories?: string[]; headlines?: [number, number | null, string][];
-  bios?: Record<string, string>; toProtagonist?: string; attrs?: [number, string, string][]; events?: number;
+  bios?: Record<string, string>; toProtagonist?: string; primary?: string; attrs?: [number, string, string][]; events?: number;
 }
 export interface CastRow { id: string; mode: string; role?: string; check?: string }
 export interface Scene { purpose?: string; who?: string[]; where?: string; when?: string; pov?: string; events?: string[] }

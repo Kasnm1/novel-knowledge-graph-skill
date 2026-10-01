@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "cytoscape": "^3.34.3",
+    "cytoscape-fcose": "^2.2.0",
+    "d3-hierarchy": "^3.1.2",
     "preact": "^11.0.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
     "@types/cytoscape": "^3.21.9",
+    "@types/d3-hierarchy": "^3.1.7",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
     "vite-plugin-singlefile": "^2.3.3"
