@@ -9,7 +9,7 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from build_dashboard import DEFAULT_VOCABULARY, merge_vocabulary
+from display_vocabulary import DEFAULT_VOCABULARY, merge_vocabulary
 from reader_prose import ID_PREFIXES, strip_process_text
 from agent_detection import detect_agents, is_agent
 from intimacy_types import EJACULATION_SITES, INTIMACY_TYPE_LABELS, canonical_intimacy_type

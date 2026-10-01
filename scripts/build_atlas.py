@@ -29,7 +29,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from build_dashboard import DEFAULT_VOCABULARY, merge_vocabulary
+from display_vocabulary import DEFAULT_VOCABULARY, merge_vocabulary
 # `controlled_vocab.py` is the authority for these axes; it stores them as bare
 # English sets because it is a validator. The Chinese labels come with them.
 from controlled_vocab import CONCEPT_CATEGORIES, SKILL_CATEGORIES

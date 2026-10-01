@@ -42,7 +42,7 @@
 
 处理方式与导航条一致：把「渲染器会用到的整套标签」当作恒可见的长名，交给同一套
 包含关系检查。标签集必须与渲染器**完全同源**（`DEFAULT_VOCABULARY` 合并本书词表，
-即 `build_dashboard.merge_vocabulary`），否则漏一个标签就会漏一条误报。
+即 `display_vocabulary.merge_vocabulary`），否则漏一个标签就会漏一条误报。
 """
 from __future__ import annotations
 
