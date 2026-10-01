@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'preact/hooks';
 import { useApp } from '../app';
 import { datedUpTo, Fact, holds, stepAt } from '../model';
-import { ChLink, Empty, Ent, Ents, Evidence, Panel, Since, Tabs, TYPE_CLASS } from '../components/common';
+import { ChLink, Empty, Ent, Ents, Evidence, More, Panel, Since, Tabs, TYPE_CLASS } from '../components/common';
+import { Avatar } from '../components/Avatar';
+import { StepLine } from '../components/Spark';
+import { orgFill, orgInk } from '../palette';
 
 const TYPE_TABS: [string, string][] = [
   ['character', '人物'], ['organization', '势力'], ['location', '地点'], ['item', '物品'], ['skill', '功法技能'], ['other', '其他'],
@@ -68,7 +71,7 @@ function Roster() {
                   const top = ix.factsAt(id, ch).filter((f) => f.facet === 'level' || f.facet === 'identity' || f.facet === 'affiliation').slice(0, 2);
                   return (
                     <button class={`card ${TYPE_CLASS[e.type] ?? ''}`} data-entity={id} onClick={() => go('people', id)}>
-                      <span class="card-name">{ix.name(id, ch)}</span>
+                      <span class="card-title"><Avatar id={id} size={tier === 'protagonist' || tier === 'core' ? 34 : 26} /><span class="card-name">{ix.name(id, ch)}</span></span>
                       {headline && <span class="card-line">{headline}</span>}
                       {top.map((f) => <span class="card-fact">{f.value}</span>)}
                       <span class="card-meta">第{e.first}章登场{seen != null && seen !== e.first ? ` · 最近第${seen}章` : ''}</span>
@@ -86,7 +89,7 @@ function Roster() {
 }
 
 function Profile({ id }: { id: string }) {
-  const { ix, ch, go } = useApp();
+  const { ix, ch, go, sets } = useApp();
   const e = ix.entity(id)!;
   const [allEvents, setAllEvents] = useState(false);
   const facts = ix.factsAt(id, ch);
@@ -112,13 +115,18 @@ function Profile({ id }: { id: string }) {
     <div class="profile" data-entity={id}>
       <div class="profile-head">
         <button class="link back" onClick={() => go('people')}>‹ 名册</button>
-        <h2 class={TYPE_CLASS[e.type]}>{ix.name(id, ch)}</h2>
+        <div class="profile-title"><Avatar id={id} size={52} /><h2 class={TYPE_CLASS[e.type]}>{ix.name(id, ch)}</h2></div>
         <div class="chips">
           <span class="chip">{ix.label('entity_types', e.type)}</span>
           {e.type === 'character' && <span class={`chip tier-${e.tier}`} title={e.tierSource === 'derived' ? '按出场事件数推算' : '编辑层判定'}>{ix.label('tiers', e.tier)}</span>}
           <span class="chip">第<ChLink n={e.first}>{e.first}</ChLink>章登场</span>
           {seen != null && <span class="chip">最近出场 第<ChLink n={seen}>{seen}</ChLink>章</span>}
           {(e.categories ?? []).map((c) => <span class="chip">{ix.label('item_categories', c)}</span>)}
+          {(sets.memberships.get(id)?.orgs ?? []).map((o) => (
+            <a class="chip org" href="#" style={{ background: orgFill(o), color: orgInk(o) }} onClick={(ev) => { ev.preventDefault(); go('people', o); }}>
+              {ix.name(o, ch)}{o === sets.memberships.get(id)?.primary && (sets.memberships.get(id)?.orgs.length ?? 0) > 1 ? '（主）' : ''}
+            </a>
+          ))}
         </div>
         {aliases.length > 0 && <div class="aliases">又称：{aliases.map((a) => <span title={`第${a[0]}章起`}>{a[1]}</span>)}</div>}
         {headline && <p class="headline">{headline}</p>}
@@ -149,6 +157,8 @@ function Profile({ id }: { id: string }) {
             )}
           </Panel>
 
+          <Growth id={id} />
+
           {(summary || attrs.length > 0 || arcBios.length > 0) && (
             <Panel title="档案" id="dossier">
               {summary && <p class="summary">{summary[1]}{summary[0] === ix.m.meta.last && <span class="muted">（全书终局描述）</span>}</p>}
@@ -174,9 +184,9 @@ function Profile({ id }: { id: string }) {
           <Panel title="关系" count={relations.length} id="relations">
             {relations.length ? [...groups.entries()].map(([group, rows]) => (
               <div class="rel-group">
-                <h4 class={`g-${group}`}>{ix.label('relation_groups', group)}</h4>
+                <h4 class={`g-${group}`}>{ix.label('relation_groups', group)} <span class="count">{rows.length}</span></h4>
                 <ul>
-                  {rows.map((r) => {
+                  <More items={rows} render={(r) => {
                     const other = r.s === id ? r.t : r.s;
                     const stance = stepAt(r.stance, ch)?.[1];
                     const note = datedUpTo(r.notes, ch).pop()?.[1];
@@ -187,7 +197,7 @@ function Profile({ id }: { id: string }) {
                         <Since from={r.from} to={r.to} />
                       </li>
                     );
-                  })}
+                  }} />
                 </ul>
               </div>
             )) : <Empty>截至本章没有有效关系。</Empty>}
@@ -196,9 +206,9 @@ function Profile({ id }: { id: string }) {
           {(routes.length + clues.length + promises.length) > 0 && (
             <Panel title="相关线索" id="threads">
               <ul class="thread-list">
-                {routes.map((x) => <li><span class="tag romance">感情线</span><Ent id={x.who === id ? (x.pro ?? x.who) : x.who} />：{ix.label('romance_statuses', stepAt(x.status, ch)?.[1])}</li>)}
-                {promises.map((x) => <li><span class="tag promise">{ix.label('commitment_statuses', stepAt(x.status, ch)?.[1]) || '承诺'}</span>{x.terms}</li>)}
-                {clues.map((x) => <li><span class="tag clue">{ix.label('foreshadow_statuses', stepAt(x.status, ch)?.[1])}</span>{x.label}</li>)}
+                <More items={routes} n={6} render={(x) => <li><span class="tag romance">感情线</span><Ent id={x.who === id ? (x.pro ?? x.who) : x.who} />：{ix.label('romance_statuses', stepAt(x.status, ch)?.[1])}</li>} />
+                <More items={promises} n={6} render={(x) => <li><span class="tag promise">{ix.label('commitment_statuses', stepAt(x.status, ch)?.[1]) || '承诺'}</span>{x.terms}</li>} />
+                <More items={clues} n={6} render={(x) => <li><span class="tag clue">{ix.label('foreshadow_statuses', stepAt(x.status, ch)?.[1])}</span>{x.label}</li>} />
               </ul>
             </Panel>
           )}
@@ -214,4 +224,29 @@ function Members({ id }: { id: string }) {
   const members = ix.relationsAt(id, ch).filter((r) => r.t === id && r.group === 'affiliation').map((r) => r.s);
   if (!members.length) return null;
   return <Panel title="成员" count={members.length} id="members"><Ents ids={members} max={80} /></Panel>;
+}
+
+/** Level progress on each axis this entity climbs, as a step line up to the current chapter. */
+function Growth({ id }: { id: string }) {
+  const { ix, ch } = useApp();
+  const byAxis = new Map<string, { from: number; value: string; sort?: number }[]>();
+  for (const f of ix.factsByEntity.get(id) ?? []) {
+    if (f.facet === 'level' && f.target && f.from <= ch) byAxis.set(f.target, [...(byAxis.get(f.target) ?? []), f]);
+  }
+  const axes = [...byAxis.entries()].filter(([, rows]) => rows.length >= 2);
+  if (!axes.length) return null;
+  return (
+    <Panel title="成长曲线" id="growth">
+      {axes.map(([axis, rows]) => {
+        const rungs = ix.m.levels[axis]?.rungs.map((r) => r.label) ?? [];
+        const pts = rows.map((r) => [r.from, r.sort ?? Math.max(0, rungs.indexOf(r.value))] as [number, number]);
+        return (
+          <div class="growth">
+            <h4>{ix.visible(axis, ch) ? ix.name(axis, ch) : '等级'}</h4>
+            <StepLine points={pts} last={ch} labels={rows.map((r) => r.value)} />
+          </div>
+        );
+      })}
+    </Panel>
+  );
 }

@@ -1,6 +1,8 @@
 import { createContext } from 'preact';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'preact/hooks';
 import { Index, Model } from './model';
+import { Membership, memberships } from './sets';
+import { Icon } from './components/Icon';
 import { ChapterAxis } from './components/ChapterAxis';
 import { Search } from './components/Search';
 import { ChapterView } from './views/ChapterView';
@@ -16,9 +18,25 @@ export const VIEWS: [ViewName, string][] = [
 ];
 
 export interface Route { view: ViewName; arg?: string }
-export interface Ctx { ix: Index; ch: number; setCh: (n: number) => void; route: Route; go: (view: ViewName, arg?: string) => void }
+export interface Ctx {
+  ix: Index; ch: number; setCh: (n: number) => void; route: Route; go: (view: ViewName, arg?: string) => void;
+  /** sets as of the current chapter, computed once per chapter for every view */
+  sets: { memberships: Map<string, Membership> };
+  /** spoiler lock: the furthest chapter the reader allows the page to show */
+  lock: number | null; setLock: (n: number | null) => void;
+}
 export const AppCtx = createContext<Ctx>(null as unknown as Ctx);
 export const useApp = () => useContext(AppCtx);
+
+const lockKey = (ix: Index) => `nkg-lock:${ix.m.meta.title ?? ''}`;
+function readLock(ix: Index): number | null {
+  try { const v = localStorage.getItem(lockKey(ix)); return v ? Number(v) : null; } catch { return null; }
+}
+function clamp(ix: Index, n: number, lock: number | null): number {
+  if (lock == null || n <= lock) return n;
+  const allowed = ix.chapterList.filter((c) => c <= lock);
+  return allowed[allowed.length - 1] ?? ix.chapterList[0];
+}
 
 function parseHash(ix: Index): { route: Route; ch: number } {
   const [path, query] = location.hash.replace(/^#\/?/, '').split('?');
@@ -32,14 +50,28 @@ function parseHash(ix: Index): { route: Route; ch: number } {
 
 export function App({ model }: { model: Model }) {
   const ix = useMemo(() => new Index(model), [model]);
-  const [state, setState] = useState(() => parseHash(ix));
+  const [lock, setLockState] = useState<number | null>(() => readLock(ix));
+  const [state, setState] = useState(() => {
+    const s = parseHash(ix), ch = clamp(ix, s.ch, readLock(ix));
+    if (ch !== s.ch) history.replaceState(null, '', location.hash.replace(/c=\d+/, `c=${ch}`));
+    return { ...s, ch };
+  });
   const [searching, setSearching] = useState(false);
+  const setLock = useCallback((n: number | null) => {
+    try { n == null ? localStorage.removeItem(lockKey(ix)) : localStorage.setItem(lockKey(ix), String(n)); } catch { /* private mode: lock lasts this visit */ }
+    setLockState(n);
+    if (n != null && state.ch > n) setState((s) => ({ ...s, ch: clamp(ix, s.ch, n) }));
+  }, [ix, state.ch]);
 
   useEffect(() => {
-    const onHash = () => setState(parseHash(ix));
+    const onHash = () => {
+      const s = parseHash(ix), ch = clamp(ix, s.ch, lock);
+      if (ch !== s.ch) history.replaceState(null, '', location.hash.replace(/c=\d+/, `c=${ch}`));
+      setState({ ...s, ch });
+    };
     addEventListener('hashchange', onHash);
     return () => removeEventListener('hashchange', onHash);
-  }, [ix]);
+  }, [ix, lock]);
 
   const write = useCallback((route: Route, ch: number, replace: boolean) => {
     const hash = `#/${route.view}${route.arg ? '/' + encodeURIComponent(route.arg) : ''}?c=${ch}`;
@@ -47,7 +79,7 @@ export function App({ model }: { model: Model }) {
     setState({ route, ch });
   }, []);
 
-  const setCh = useCallback((n: number) => write(state.route, n, true), [state.route, write]);
+  const setCh = useCallback((n: number) => write(state.route, clamp(ix, n, lock), true), [state.route, write, ix, lock]);
   const go = useCallback((view: ViewName, arg?: string) => write({ view, arg }, state.ch, false), [state.ch, write]);
 
   useEffect(() => {
@@ -64,7 +96,8 @@ export function App({ model }: { model: Model }) {
     return () => removeEventListener('keydown', onKey);
   }, [ix, state.ch, setCh]);
 
-  const ctx: Ctx = { ix, ch: state.ch, setCh, route: state.route, go };
+  const sets = useMemo(() => ({ memberships: memberships(ix, state.ch) }), [ix, state.ch]);
+  const ctx: Ctx = { ix, ch: state.ch, setCh, route: state.route, go, sets, lock, setLock };
   const { view, arg } = state.route;
   const meta = model.meta;
 
@@ -81,7 +114,7 @@ export function App({ model }: { model: Model }) {
         </header>
         <nav class="nav">
           {VIEWS.map(([v, label]) => (
-            <a href={`#/${v}?c=${state.ch}`} class={v === view ? 'on' : ''} data-view={v}>{label}</a>
+            <a href={`#/${v}?c=${state.ch}`} class={v === view ? 'on' : ''} data-view={v}><Icon name={v} />{label}</a>
           ))}
         </nav>
         <main class="main" data-view={view}>

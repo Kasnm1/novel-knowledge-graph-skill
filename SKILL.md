@@ -113,6 +113,7 @@ python scripts/validate_full_graph.py --graph <graph.json>
 python scripts/audit_chapter_depth.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> --markdown <depth.md>
 python scripts/compare_fragments.py --a <fragment-a.json> --b <gold.json> --gold --min-recall 0.8
 python scripts/build_expansion_artifacts.py --graph <graph.json> --chapters-jsonl <chapters.jsonl> [--cutoff <N>] --output-dir <derived>
+python scripts/build_reader_dashboard.py --graph <graph.json> --output <dashboard.html> [--display-hints <h.json>] [--ledger <ledger.json>] [--cutoff <N>]
 python scripts/export_ai_bundle.py --graph <graph.json> --output-dir <bundle> [--cutoff <N>]
 ```
 

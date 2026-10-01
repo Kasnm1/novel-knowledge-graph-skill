@@ -55,7 +55,9 @@ export interface Model {
   threads: { clues: Clue[]; promises: Promise_[]; routes: Route[]; acts: Act[] };
   levels: Record<string, { rungs: { label: string; sort?: number; from: number }[] }>;
   evidence: Record<string, [number, string]>;
+  milestones?: Milestone[];
 }
+export interface Milestone { ch: number; kind: 'death' | 'breakthrough' | 'romance' | 'payoff'; label: string; who?: string; event?: string }
 
 export const holds = (from: number, to: number | null | undefined, ch: number) => from <= ch && (to == null || ch <= to);
 

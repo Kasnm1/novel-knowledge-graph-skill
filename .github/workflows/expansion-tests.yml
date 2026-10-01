@@ -18,6 +18,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the reader app and check the committed copy is current
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          git diff --exit-code -- ../assets/reader-app.html || (echo "assets/reader-app.html is stale: run npm run build in web/ and commit it" && exit 1)
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
       - name: Set up ChromeDriver

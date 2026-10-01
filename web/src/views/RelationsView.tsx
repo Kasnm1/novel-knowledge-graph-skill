@@ -4,6 +4,7 @@ import { useApp } from '../app';
 import { Index, Relation, datedUpTo, holds, stepAt } from '../model';
 import { memberships, parents } from '../sets';
 import { GraphCanvas, GROUP_COLORS } from '../components/GraphCanvas';
+import { orgFill, orgStroke } from '../palette';
 import { ChLink, Empty, Ent, Evidence, Panel, Since, Tabs } from '../components/common';
 
 type Mode = 'focus' | 'circles' | 'window';
@@ -122,7 +123,7 @@ function setGraph(ix: Index, ch: number, edgeOk: (r: Relation) => boolean, inclu
     orgsUsed.add(org);
     const p = orgParent.get(org);
     if (p) addOrg(p);
-    els.push({ data: { id: `set:${org}`, label: ix.name(org, ch), parent: p ? `set:${p}` : undefined, kind: 'org' } });
+    els.push({ data: { id: `set:${org}`, label: ix.name(org, ch), parent: p ? `set:${p}` : undefined, kind: 'org', fill: orgFill(org), stroke: orgStroke(org) } });
   };
   const circles = socialCircles(people.filter((p) => !member.has(p)), rels);
   for (const id of people) {
@@ -130,7 +131,7 @@ function setGraph(ix: Index, ch: number, edgeOk: (r: Relation) => boolean, inclu
     let parent: string | undefined;
     if (m?.primary) { addOrg(m.primary); parent = `set:${m.primary}`; }
     else if (circles.has(id)) parent = `circle:${circles.get(id)}`;
-    els.push(personNode(ix, ch, id, { parent, multi: m && m.orgs.length > 1 ? m.orgs.length : undefined }));
+    els.push(personNode(ix, ch, id, { parent, multi: m && m.orgs.length > 1 ? m.orgs.length : undefined, color: m?.primary ? orgStroke(m.primary) : undefined }));
   }
   for (const label of new Set(circles.values())) {
     els.push({ data: { id: `circle:${label}`, label: `${ix.name(label, ch)} 的圈子`, kind: 'circle', fill: '#fbfbf7', stroke: '#c9c3a6' } });

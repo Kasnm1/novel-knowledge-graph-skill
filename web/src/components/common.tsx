@@ -91,3 +91,17 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: [T, st
     </div>
   );
 }
+
+/** Show the first `n` items and fold the rest behind a toggle. */
+export function More<T>({ items, n = 8, render }: { items: T[]; n?: number; render: (item: T) => ComponentChildren }) {
+  const [open, setOpen] = useState(false);
+  const shown = open ? items : items.slice(0, n);
+  return (
+    <>
+      {shown.map(render)}
+      {items.length > n && (
+        <li class="more"><button class="link" onClick={() => setOpen(!open)}>{open ? '收起' : `展开其余 ${items.length - n} 条`}</button></li>
+      )}
+    </>
+  );
+}

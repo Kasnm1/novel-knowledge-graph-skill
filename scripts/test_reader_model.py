@@ -86,6 +86,10 @@ class ReaderModelTests(unittest.TestCase):
         self.assertEqual([c["id"] for c in chapters[3]["cast"]], ["char_a", "char_b"])
         self.assertEqual([r["label"] for r in self.model["levels"]["axis_x"]["rungs"]], ["一级", "二级"])
 
+    def test_milestones_mark_breakthroughs(self):
+        kinds = {(m["ch"], m["kind"]) for m in self.model["milestones"]}
+        self.assertIn((20, "breakthrough"), kinds)
+
     def test_only_cited_evidence_is_carried(self):
         # entity-level evidence is undated prose support, so it is not carried
         self.assertEqual(set(self.model["evidence"]), {"e3", "e20", "e25"})
@@ -100,6 +104,27 @@ class PlaceLinkTests(unittest.TestCase):
         g["state_changes"][0]["after"] = {"label": "山谷深处"}
         loc = next(f for f in build(g)["facts"] if f["facet"] == "location")
         self.assertNotIn("place", loc)
+
+
+class PipelineTests(unittest.TestCase):
+    def test_one_command_build_makes_the_reader_dashboard_the_default_page(self):
+        from unittest.mock import patch
+        import build_expansion_artifacts
+        calls = {}
+        def fake_run_step(name, cmd, manifest, timeout=None):
+            calls[name] = [str(c) for c in cmd]
+            return 0
+        with tempfile.TemporaryDirectory() as tmp:
+            g = Path(tmp) / "graph.json"
+            g.write_text("{}", encoding="utf-8")
+            out = Path(tmp) / "out"
+            with patch.object(build_expansion_artifacts, "run_step", side_effect=fake_run_step), patch(
+                    "sys.argv", ["x", "--graph", str(g), "--output-dir", str(out), "--cutoff", "7"]):
+                build_expansion_artifacts.main()
+        self.assertTrue(calls["dashboard"][1].endswith("build_reader_dashboard.py"))
+        self.assertIn(str(out / "dashboard.html"), calls["dashboard"])
+        self.assertIn("7", calls["dashboard"])
+        self.assertIn(str(out / "legacy"), calls["dashboard-legacy"])
 
 
 class CutoffBuildTests(unittest.TestCase):

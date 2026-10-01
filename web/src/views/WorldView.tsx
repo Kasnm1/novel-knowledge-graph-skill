@@ -4,10 +4,10 @@ import { holds } from '../model';
 import { memberships, nest, parents, placeLinks, whereabouts } from '../sets';
 import { PackChart } from '../components/PackChart';
 import { Empty, Ent, Ents, Panel, Tabs } from '../components/common';
+import { orgFill, orgStroke } from '../palette';
 
 type Tab = 'factions' | 'map' | 'levels' | 'catalog';
-const PALETTE = ['#e8d5f5', '#d5ecdf', '#f7e3cf', '#d6e4f7', '#f5d5dc', '#e9eccf', '#d3eef0', '#efdcc9'];
-const hue = (id: string) => PALETTE[[...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % PALETTE.length];
+const hue = orgFill;
 
 export function WorldView({ tab }: { tab?: string }) {
   const { go } = useApp();
@@ -91,7 +91,7 @@ function WorldMap() {
         <Panel title={`截至第${ch}章的地点`} count={data.count} id="map-pack"
           extra={<span class="muted"><i class="legend hot" />本章发生地 <i class="legend pin" />人物所在 · 底色 = 控制势力</span>}>
           <PackChart root={data.tree} highlight={data.here} pins={data.pins} onPick={(id) => go('people', id)}
-            tint={(id, n) => (n.kind === 'member' ? '#8a4fc7' : id && data.control.get(id) ? hue(data.control.get(id)!) : undefined)} />
+            tint={(id, n) => (n.kind === 'member' ? (id ? orgStroke(id) : '#8a4fc7') : id && data.control.get(id) ? hue(data.control.get(id)!) : undefined)} />
         </Panel>
       </div>
       <div class="col-side">

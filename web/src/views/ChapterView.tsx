@@ -1,6 +1,10 @@
 import { useApp } from '../app';
 import { Fact, stepAt } from '../model';
 import { ChLink, Empty, Ent, Ents, Evidence, Panel, Since } from '../components/common';
+import { Avatar } from '../components/Avatar';
+import { DensitySpark } from '../components/Spark';
+import { Compare } from '../components/Compare';
+import { useState } from 'preact/hooks';
 
 /** This chapter only: what happened, who was there and in what state, what changed, what it carries forward. */
 export function ChapterView() {
@@ -20,13 +24,25 @@ export function ChapterView() {
   const routes = t.routes.filter((x) => x.status.some((s) => s[0] === ch) || (x.steps ?? []).some((s) => s[0] === ch));
   const acts = t.acts.filter((x) => x.ch === ch);
   const derived = present.length > 0 && present.every((r) => r.mode === 'derived');
+  const [comparing, setComparing] = useState(false);
+  const milestones = (ix.m.milestones ?? []).filter((m) => m.ch === ch);
 
   return (
-    <div class="chapter-view">
+    <div class="chapter-view" key={ch}>
       <div class="chapter-head">
-        <h2>第{ch}章{c.title && <span class="ch-title">{c.title}</span>}</h2>
+        <div class="hero">
+          <div class="hero-num"><small>第</small>{ch}<small>章</small></div>
+          <div class="hero-main">
+            {c.title ? <h2>{c.title}</h2> : <h2 class="untitled">（本章无标题）</h2>}
+            {(c.arcs ?? []).length > 0 && <div class="ribbon">{(c.arcs ?? []).map((id) => <span>{ix.arcs.get(id)?.title}</span>)}</div>}
+          </div>
+          <div class="hero-side">
+            <DensitySpark />
+            <button class="link" onClick={() => setComparing(!comparing)}>{comparing ? '收起对比' : '与之前某章对比'}</button>
+          </div>
+        </div>
+        {milestones.length > 0 && <div class="ms-row">{milestones.map((m) => <span class={`ms-chip k-${m.kind}`}>{m.label}</span>)}</div>}
         <div class="chips">
-          {(c.arcs ?? []).map((id) => <span class="chip arc">{ix.arcs.get(id)?.title}</span>)}
           {(c.functions ?? []).map((f) => <span class="chip">{ix.label('narrative_functions', f)}</span>)}
           {c.cliffhanger && c.cliffhanger !== 'none' && <span class="chip hook">章末：{ix.label('cliffhangers', c.cliffhanger)}</span>}
           {c.quality?.grade && <span class={`chip q-${c.quality.grade}`}>审计 {c.quality.score}{c.quality.verified ? ' · 已复核' : ' · 未复核'}</span>}
@@ -34,6 +50,7 @@ export function ChapterView() {
         </div>
       </div>
 
+      {comparing && <Compare />}
       <div class="cols">
         <div class="col-main">
           <Panel title="梗概" id="summary">
@@ -158,7 +175,7 @@ function CastRow({ id, role, check }: { id: string; role?: string; check?: strin
   return (
     <li class="cast-row">
       <div class="cast-head">
-        <Ent id={id} />
+        <Avatar id={id} size={24} /><Ent id={id} />
         {check === 'changed' && <span class="mark changed" title="本章状态有变化">▲</span>}
         {check === 'confirmed_unchanged' && <span class="mark confirmed" title="审计确认本章状态未变">✓</span>}
         {role && <span class="role">{role}</span>}

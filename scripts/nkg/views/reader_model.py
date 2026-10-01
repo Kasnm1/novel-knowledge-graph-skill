@@ -520,6 +520,35 @@ def _dedupe_steps(steps: list[list[Any]]) -> list[list[Any]]:
     return out
 
 
+def _milestones(model: Mapping[str, Any], protagonists: list[str]) -> list[dict[str, Any]]:
+    """Landmarks for the chapter axis: deaths, protagonist breakthroughs, confirmed romances, clue payoffs."""
+    names = {eid: (e.get("names") or [[0, eid]])[-1][1] for eid, e in model["entities"].items()}
+    tiers = {eid: e.get("tier") for eid, e in model["entities"].items()}
+    out: list[dict[str, Any]] = []
+    for eid, ev in model["events"].items():
+        if ev.get("death"):
+            out.append({"ch": ev["ch"], "kind": "death", "label": ev.get("title") or "死亡", "event": eid})
+    for f in model["facts"]:
+        if f["facet"] == "health" and not f.get("volatile") and any(w in f["value"] for w in DURABLE_HEALTH_WORDS) \
+                and tiers.get(f["e"]) in {"protagonist", "core", "major"}:
+            out.append({"ch": f["from"], "kind": "death", "label": f"{names.get(f['e'], f['e'])}：{f['value']}", "who": f["e"]})
+        if f["facet"] == "level" and f["e"] in protagonists and f.get("action") in {"gained", "upgraded", "changed"}:
+            out.append({"ch": f["from"], "kind": "breakthrough", "label": f"{names.get(f['e'], f['e'])} → {f['value']}", "who": f["e"]})
+    for r in model["threads"]["routes"]:
+        if r.get("confirmed") is not None:
+            out.append({"ch": r["confirmed"], "kind": "romance", "label": f"与{names.get(r['who'], r['who'])}确认关系", "who": r["who"]})
+    for c in model["threads"]["clues"]:
+        if c.get("payoffAt") is not None:
+            out.append({"ch": c["payoffAt"], "kind": "payoff", "label": f"伏笔回收：{c['label']}"})
+    seen, unique = set(), []
+    for m in sorted(out, key=lambda m: (m["ch"], m["kind"], m["label"])):
+        key = (m["ch"], m["kind"], m.get("who") or m["label"])
+        if key not in seen:
+            seen.add(key)
+            unique.append(m)
+    return unique
+
+
 def build_reader_model(graph: Mapping[str, Any], *, hints: Mapping[str, Any] | None = None,
                        ledger: Mapping[str, Any] | None = None, vocabulary: Mapping[str, Any] | None = None,
                        protagonist_ids: Iterable[str] = (), cutoff: int | None = None) -> dict[str, Any]:
@@ -559,6 +588,7 @@ def build_reader_model(graph: Mapping[str, Any], *, hints: Mapping[str, Any] | N
         "threads": b.thread_rows(),
         "levels": b.level_ladders(facts),
     }
+    model["milestones"] = _milestones(model, b.protagonists)
     model["evidence"] = {i: [chapter_value(b.evidence[i].get("chapter")), b.evidence[i].get("quote") or ""]
                          for i in sorted(b.used_evidence)}
     return model

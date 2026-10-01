@@ -15,7 +15,7 @@ files it loads; `lookup` files are opened only for a specific question.
 | `retrieval-and-efficiency.md` | retrieval levels R1–R4, caching, budgets, the accuracy A/B gate |
 | `temporal-view-contract.md` | as-of views and spoiler closure |
 | `overlapping-timelines-and-membership.md` | overlapping arcs and multi-membership, data and rendering |
-| `dashboard.md` | reader dashboard contracts: presentation, performance, taxonomy, display hints, collections, arcs, style |
+| `dashboard.md` | the reader dashboard: reader model, what a reader may see at chapter N, entries, sets and subsets, display hints |
 | `architecture.md` | module boundaries and the run / version / concurrency contract |
 | `ai-context.md` | bounded AI context exports |
 | `TASK-SPEC.template.md` | per-run task spec template |

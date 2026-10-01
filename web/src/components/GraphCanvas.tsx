@@ -15,7 +15,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const STYLE: cytoscape.StylesheetJson = [
   { selector: 'node', style: {
-    'background-color': (n: cytoscape.NodeSingular) => TYPE_COLORS[n.data('type')] ?? '#5f6b7a',
+    'background-color': (n: cytoscape.NodeSingular) => n.data('color') ?? TYPE_COLORS[n.data('type')] ?? '#5f6b7a',
     label: 'data(label)', 'font-size': 11, 'text-valign': 'bottom', 'text-margin-y': 3, color: '#1f2933',
     'text-outline-color': '#fff', 'text-outline-width': 2,
   } },

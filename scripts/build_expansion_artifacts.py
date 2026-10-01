@@ -73,10 +73,11 @@ def implementation_files(scripts: Path) -> list[Path]:
         "build_expansion_artifacts.py", "validate_full_graph.py", "validate_graph.py",
         "extension_contracts.py", "filter_graph_asof.py", "derive_novel_views.py",
         "build_quality_report.py", "build_provenance_index.py", "build_entity_profiles.py",
-        "build_story_time_view.py", "build_unified_dashboard.py", "enhance_unified_dashboard.py",
+        "build_story_time_view.py", "build_reader_dashboard.py", "build_reader_model.py", "build_unified_dashboard.py", "enhance_unified_dashboard.py",
         "build_expansion_candidates.py", "build_reader_overlay.py", "build_snapshot_checkpoints.py",
     )
     files = [scripts / name for name in names]
+    files.append(scripts.parent / "assets" / "reader-app.html")
     files.extend((scripts / "nkg").rglob("*.py"))
     return [path for path in files if path.is_file()]
 
@@ -89,6 +90,7 @@ def main() -> int:
     parser.add_argument("--chapters-jsonl", type=Path)
     parser.add_argument("--collection-manifest", type=Path)
     parser.add_argument("--display-hints", type=Path, help="Optional AI-authored derived display hints; never a canonical fact source")
+    parser.add_argument("--ledger", type=Path, help="coverage-ledger.json: per-chapter audit quality for the chapter axis")
     parser.add_argument("--cutoff", type=int)
     parser.add_argument("--protagonist-id", action="append", default=[])
     parser.add_argument("--checkpoint-interval", type=int, default=0, help="Prebuild strict snapshot checkpoints; 0 disables")
@@ -114,6 +116,7 @@ def main() -> int:
             "chapters_jsonl": args.chapters_jsonl.resolve() if args.chapters_jsonl else None,
             "collection_manifest": args.collection_manifest.resolve() if args.collection_manifest else None,
             "display_hints": args.display_hints.resolve() if args.display_hints else None,
+            "ledger": args.ledger.resolve() if args.ledger else None,
         },
         parameters={
             "cutoff": args.cutoff,
@@ -216,20 +219,36 @@ def main() -> int:
     if run_step("candidates", candidate_command, manifest, timeout):
         return fail("candidate scan incomplete or failed")
 
-    dashboard = [sys.executable, scripts / "build_unified_dashboard.py", "--graph", args.graph, "--output-dir", out]
+    # The reader dashboard (assets/reader-app.html + the reader model) is the default page.
+    dashboard = [sys.executable, scripts / "build_reader_dashboard.py", "--graph", args.graph,
+                 "--output", out / "dashboard.html", "--model-output", out / "reader-model.json"]
     if args.cutoff is not None:
         dashboard += ["--cutoff", args.cutoff]
-    if args.collection_manifest:
-        dashboard += ["--collection-manifest", args.collection_manifest]
+    if args.display_hints:
+        dashboard += ["--display-hints", args.display_hints]
+    if args.ledger:
+        dashboard += ["--ledger", args.ledger]
     for protagonist_id in args.protagonist_id:
         dashboard += ["--protagonist-id", protagonist_id]
     if run_step("dashboard", dashboard, manifest, timeout):
         return fail("dashboard build failed")
-    if run_step("dashboard-intelligence", [
+
+    # The previous unified dashboard is still built, beside it, for comparison.
+    legacy_dir = out / "legacy"
+    legacy = [sys.executable, scripts / "build_unified_dashboard.py", "--graph", args.graph, "--output-dir", legacy_dir]
+    if args.cutoff is not None:
+        legacy += ["--cutoff", args.cutoff]
+    if args.collection_manifest:
+        legacy += ["--collection-manifest", args.collection_manifest]
+    for protagonist_id in args.protagonist_id:
+        legacy += ["--protagonist-id", protagonist_id]
+    if run_step("dashboard-legacy", legacy, manifest, timeout):
+        return fail("legacy dashboard build failed")
+    if run_step("dashboard-legacy-intelligence", [
         sys.executable, scripts / "enhance_unified_dashboard.py",
-        "--dashboard", out / "dashboard.html", "--profiles", profiles, "--quality", quality,
+        "--dashboard", legacy_dir / "dashboard.html", "--profiles", profiles, "--quality", quality,
     ], manifest, timeout):
-        return fail("dashboard intelligence enhancement failed")
+        return fail("legacy dashboard intelligence enhancement failed")
 
     if args.chapters_jsonl:
         reader = [sys.executable, scripts / "build_reader_overlay.py", "--graph", args.graph, "--chapters-jsonl", args.chapters_jsonl, "--output", out / "reader.html"]
@@ -248,7 +267,7 @@ def main() -> int:
 
     required = [
         out / "validation-base.json", out / "validation-expansion.json", out / "validation-invariants.json",
-        views, story_time, quality, provenance, profiles, out / "dashboard.html", out / "expansion-candidates.json",
+        views, story_time, quality, provenance, profiles, out / "dashboard.html", out / "reader-model.json", legacy_dir / "dashboard.html", out / "expansion-candidates.json",
     ]
     if args.cutoff is not None:
         required.append(graph)
